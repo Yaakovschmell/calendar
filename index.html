@@ -97,10 +97,9 @@ html, body { width: 100%; height: 100%; background: #0d1520; font-family: var(--
 .cal-day-num { font-family: var(--font-serif); font-size: 13px; color: var(--text-dim); line-height: 1; flex-shrink: 0; }
 .cal-day.today { background: rgba(240,201,122,0.18); border-color: var(--accent); }
 .cal-day.today .cal-day-num { color: var(--accent); font-weight: 700; }
-  .cal-day.has-content { background: var(--glass-light); }        
+.cal-day.other-month .cal-day-num { opacity: 0.2; }
 .cal-event.multiday { background: rgba(122,184,240,0.65); color: var(--text); }
 .cal-more { font-size: 8px; color: var(--text-muted); padding: 0 2px; }
-
 #upcoming-block { padding: 13px 16px; flex-shrink: 0; }
 #upcoming-list { display: flex; flex-direction: column; gap: 5px; margin-top: 7px; }
 .upcoming-item { display: flex; align-items: center; gap: 9px; padding: 6px 9px; background: var(--glass-light); border-radius: 9px; border-left: 3px solid var(--accent); }
