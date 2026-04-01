@@ -91,12 +91,12 @@ html, body { width: 100%; height: 100%; background: #0d1520; font-family: var(--
 
 #cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; flex: 1; min-height: 0; }
 .cal-dow { text-align: center; font-size: 9px; font-weight: 500; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; padding-bottom: 5px; }
-.cal-day { background: transparent; border: 1px solid transparent;.cal-day-num { font-family: var(--font-serif); font-size: 13px; color: var(--text-dim); line-height: 1; flex-shrink: 0; }
+.cal-day { background: transparent; border: 1px solid transparent; border-radius: 9px; padding: 4px 3px 2px; display: flex; flex-direction: column; overflow: hidden; transition: background 0.15s; min-height: 0; }
+.cal-day.has-content { background: var(--glass-light); }
+.cal-day:hover { background: rgba(255,255,255,0.08); }
+.cal-day-num { font-family: var(--font-serif); font-size: 13px; color: var(--text-dim); line-height: 1; flex-shrink: 0; }
 .cal-day.today { background: rgba(240,201,122,0.18); border-color: var(--accent); }
 .cal-day.today .cal-day-num { color: var(--accent); font-weight: 700; }
-.cal-day.other-month .cal-day-num { opacity: 0.2; }
-.cal-events { margin-top: 2px; display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
-.cal-event { font-size: 8px; font-weight: 500; background: var(--accent); color: #1a1200; border-radius: 3px; padding: 1px 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.5; }
   .cal-day.has-content { background: var(--glass-light); }        
 .cal-event.multiday { background: rgba(122,184,240,0.65); color: var(--text); }
 .cal-more { font-size: 8px; color: var(--text-muted); padding: 0 2px; }
