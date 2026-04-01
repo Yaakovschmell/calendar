@@ -2,59 +2,125 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Smart Frame</title>
+<title>Smart Wall Display</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
-body { margin:0; font-family:Inter; background:black; overflow:hidden; }
+*{margin:0;padding:0;box-sizing:border-box;}
 
-/* BACKGROUND */
-#bg {
-  position:fixed; inset:0;
-  background-size:cover;
-  background-position:center;
-  filter:blur(8px) brightness(0.6);
+body{
+  font-family:Inter;
+  background:#000;
+  overflow:hidden;
 }
 
-/* MAIN */
-#container {
+/* BACKGROUND (SHARP, NO BLUR) */
+#bg{
+  position:fixed;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+  filter:brightness(0.75);
+}
+
+/* MAIN LAYOUT */
+#container{
   display:flex;
   height:100vh;
-  padding:60px;
-  gap:60px;
+  padding:50px;
+  gap:40px;
   position:relative;
   z-index:10;
 }
 
-/* LEFT */
-#left { flex:1; display:flex; flex-direction:column; justify-content:space-between; }
+/* LEFT PANEL */
+#left{
+  width:35%;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
 
-#clock { font-size:120px; color:white; }
-#date { font-size:24px; color:rgba(255,255,255,0.8); }
+/* CLOCK */
+#clock{
+  font-size:110px;
+  font-weight:300;
+  color:white;
+}
 
-/* WEATHER */
-#temp { font-size:60px; color:white; }
-#desc { color:rgba(255,255,255,0.7); }
+#date{
+  font-size:24px;
+  color:rgba(255,255,255,0.8);
+  margin-top:10px;
+}
 
-/* RIGHT */
-#right {
-  width:55%;
+/* WEATHER PANEL */
+#weather{
+  background:rgba(0,0,0,0.5);
+  padding:20px;
+  border-radius:20px;
+  backdrop-filter:blur(10px);
+  color:white;
+}
+
+/* WEATHER TOP */
+#weather-main{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+#temp{
+  font-size:60px;
+}
+
+#desc{
+  font-size:18px;
+  opacity:0.8;
+}
+
+/* WEATHER DETAILS GRID */
+#weather-details{
+  margin-top:15px;
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  font-size:14px;
+}
+
+.detail{
+  background:rgba(255,255,255,0.05);
+  padding:10px;
+  border-radius:10px;
+}
+
+/* RIGHT SIDE */
+#right{
+  flex:1;
   background:rgba(0,0,0,0.45);
-  backdrop-filter:blur(20px);
   border-radius:25px;
   padding:30px;
+  backdrop-filter:blur(15px);
+  display:flex;
+  flex-direction:column;
 }
 
-#month { font-size:30px; color:white; margin-bottom:20px; }
+/* CALENDAR */
+#month{
+  font-size:30px;
+  color:white;
+  margin-bottom:20px;
+}
 
-#calendar {
+#calendar{
   display:grid;
   grid-template-columns:repeat(7,1fr);
-  gap:12px;
+  gap:10px;
+  flex:1;
 }
 
-.day {
+.day{
   color:white;
   font-size:22px;
   display:flex;
@@ -64,28 +130,10 @@ body { margin:0; font-family:Inter; background:black; overflow:hidden; }
   border-radius:12px;
 }
 
-.today {
+.today{
   background:#f0c97a;
   color:black;
   font-weight:600;
-}
-
-/* SETTINGS PANEL */
-#settings {
-  position:fixed;
-  top:20px;
-  right:20px;
-  width:300px;
-  background:rgba(0,0,0,0.85);
-  padding:20px;
-  border-radius:12px;
-  color:white;
-  display:none;
-}
-
-#settings input {
-  width:100%;
-  margin-bottom:10px;
 }
 </style>
 </head>
@@ -95,79 +143,44 @@ body { margin:0; font-family:Inter; background:black; overflow:hidden; }
 <div id="bg"></div>
 
 <div id="container">
+
   <div id="left">
+
     <div>
       <div id="clock"></div>
       <div id="date"></div>
     </div>
-    <div>
-      <div id="temp"></div>
-      <div id="desc"></div>
+
+    <div id="weather">
+      <div id="weather-main">
+        <div id="temp">--°</div>
+        <div id="desc">Loading...</div>
+      </div>
+
+      <div id="weather-details">
+        <div class="detail">Wind: <span id="wind"></span></div>
+        <div class="detail">Rain: <span id="rain"></span></div>
+        <div class="detail">Pressure: <span id="pressure"></span></div>
+        <div class="detail">Humidity: <span id="humidity"></span></div>
+        <div class="detail">Feels: <span id="feels"></span></div>
+        <div class="detail">Clouds: <span id="clouds"></span></div>
+      </div>
     </div>
+
   </div>
 
   <div id="right">
     <div id="month"></div>
     <div id="calendar"></div>
   </div>
-</div>
 
-<!-- SETTINGS -->
-<div id="settings">
-  <h3>Settings</h3>
-
-  <label>Photo URLs (comma separated)</label>
-  <input id="photosInput">
-
-  <label>Latitude</label>
-  <input id="latInput">
-
-  <label>Longitude</label>
-  <input id="lonInput">
-
-  <button onclick="saveSettings()">Save</button>
 </div>
 
 <script>
 
-/* LOAD SETTINGS */
-let settings = JSON.parse(localStorage.getItem("settings")) || {
-  photos: [
-    "https://lh3.googleusercontent.com/pw/AP1GczMmuMo-VlOqZN-wEgVF2XhCqZatam8NU8aK6LkURDLfLAPkQyfb0lIcrMFcBtfpC81fKjlB4gUQ_HqsaSZKncMIUlESIRiE5deumBUO4YB8dHilPWrz=w4096"
-  ],
-  lat: 39.39,
-  lon: -76.78
-};
-
-/* SAVE */
-function saveSettings(){
-  settings.photos = document.getElementById("photosInput").value.split(",");
-  settings.lat = document.getElementById("latInput").value;
-  settings.lon = document.getElementById("lonInput").value;
-  localStorage.setItem("settings", JSON.stringify(settings));
-  location.reload();
-}
-
-/* TOGGLE SETTINGS */
-document.addEventListener("keydown", (e)=>{
-  if(e.key === "s"){
-    const panel = document.getElementById("settings");
-    panel.style.display = panel.style.display === "block" ? "none" : "block";
-
-    document.getElementById("photosInput").value = settings.photos.join(",");
-    document.getElementById("latInput").value = settings.lat;
-    document.getElementById("lonInput").value = settings.lon;
-  }
-});
-
-/* BACKGROUND */
-let index = 0;
-function changePhoto(){
-  document.getElementById("bg").style.backgroundImage = `url(${settings.photos[index]})`;
-  index = (index + 1) % settings.photos.length;
-}
-setInterval(changePhoto, 30000);
-changePhoto();
+/* BACKGROUND IMAGE (HIGH QUALITY) */
+document.getElementById("bg").style.backgroundImage =
+"url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=3840')";
 
 /* CLOCK */
 function updateClock(){
@@ -180,12 +193,21 @@ function updateClock(){
 setInterval(updateClock,1000);
 updateClock();
 
-/* WEATHER */
-fetch(`https://api.open-meteo.com/v1/forecast?latitude=${settings.lat}&longitude=${settings.lon}&current_weather=true`)
+/* WEATHER (FULL DATA) */
+fetch("https://api.open-meteo.com/v1/forecast?latitude=39.39&longitude=-76.78&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,pressure_msl,cloud_cover,wind_speed_10m")
 .then(r=>r.json())
 .then(d=>{
-  document.getElementById("temp").innerText = Math.round(d.current_weather.temperature)+"°";
-  document.getElementById("desc").innerText = "Current weather";
+  const w = d.current;
+
+  document.getElementById("temp").innerText = Math.round(w.temperature_2m)+"°";
+  document.getElementById("desc").innerText = "Current";
+
+  document.getElementById("wind").innerText = w.wind_speed_10m + " mph";
+  document.getElementById("rain").innerText = w.precipitation + " mm";
+  document.getElementById("pressure").innerText = w.pressure_msl + " hPa";
+  document.getElementById("humidity").innerText = w.relative_humidity_2m + "%";
+  document.getElementById("feels").innerText = w.apparent_temperature + "°";
+  document.getElementById("clouds").innerText = w.cloud_cover + "%";
 });
 
 /* CALENDAR */
@@ -210,6 +232,7 @@ function renderCalendar(){
     cal.innerHTML += `<div class="${cls}">${d}</div>`;
   }
 }
+
 renderCalendar();
 
 </script>
