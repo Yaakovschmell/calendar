@@ -1,272 +1,571 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fishing Dashboard Live</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@200;300;400;500&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart Display Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet" />
 <style>
-:root {
-  --overlay: rgba(0,0,0,0.08);
-  --glass: rgba(0,0,0,0.20);
-  --glass-light: rgba(255,255,255,0.08);
-  --border: rgba(255,255,255,0.13);
-  --text: #ffffff;
-  --text-dim: rgba(255,255,255,0.82);
-  --text-muted: rgba(255,255,255,0.56);
-  --accent: #f0c97a;
-  --accent2: #7ab8f0;
-  --good: #7adba0;
-  --warn: #f0c97a;
-  --bad: #f07a7a;
-  --radius: 16px;
-  --font-serif: 'Playfair Display', Georgia, serif;
-  --font-sans: 'DM Sans', sans-serif;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 100%; height: 100%; background: #0d1520; font-family: var(--font-sans); overflow: hidden; color: var(--text); }
-#bg {
-  position: fixed; inset: 0; z-index: 0;
-  background: url('https://images.pexels.com/photos/2994160/pexels-photo-2994160.jpeg') center/cover no-repeat;
-  transition: opacity 0.5s ease;
-  opacity: 1;
-}
-#bg::after { content: ''; position: absolute; inset: 0; background: var(--overlay); }
-#bg.fade { opacity: 0; }
-#app { position: fixed; inset: 0; z-index: 10; text-shadow: 0 1px 4px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.8); display: grid; grid-template-columns: 310px 1fr 294px; gap: 14px; padding: 20px 18px 16px; height: 100vh; overflow: hidden; }
-.panel { background: transparent; border: 1px solid rgba(255,255,255,0.10); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); border-radius: var(--radius); box-shadow: none; }
-#col-left, #col-center, #col-right { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
-#clock-block { padding: 20px 22px 16px; }
-#clock-time { font-family: var(--font-serif); font-size: clamp(60px, 9vw, 92px); font-weight: 400; line-height: 0.95; color: var(--text); text-shadow: 0 2px 24px rgba(0,0,0,0.5); letter-spacing: -1px; }
-#clock-ampm { font-family: var(--font-sans); font-weight: 200; color: var(--accent); letter-spacing: 3px; margin-left: 5px; vertical-align: super; font-size: 0.28em; }
-#clock-sep { transition: opacity 0.1s; }
-#clock-date { font-size: 13px; font-weight: 300; color: var(--text-dim); margin-top: 7px; letter-spacing: 0.3px; }
-#weather-block { padding: 16px 18px; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-.section-label { font-size: 10px; font-weight: 500; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; opacity: 0.95; }
-#weather-main { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-#weather-icon { font-size: 42px; line-height: 1; filter: drop-shadow(0 0 10px rgba(240,201,122,0.35)); }
-#weather-temp { font-family: var(--font-serif); font-size: 52px; font-weight: 400; line-height: 1; text-shadow: 0 2px 14px rgba(0,0,0,0.4); }
-#weather-desc { font-size: 12px; color: var(--text-dim); font-style: italic; line-height: 1.5; }
-#weather-feels { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
-.w-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; }
-.w-stat { background: transparent; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 7px 9px; }
-.w-stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 1px; }
-.w-stat-value { font-family: var(--font-serif); font-size: 16px; color: var(--text); }
-#forecast-row { display: flex; gap: 5px; margin-bottom: 9px; min-height: 46px; }
-.fc-day { flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 6px 2px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.fc-name { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
-.fc-icon { font-size: 17px; }
-.fc-hi { font-family: var(--font-serif); font-size: 13px; color: var(--text); }
-.fc-lo { font-size: 10px; color: var(--text-muted); }
-#sun-row { display: flex; gap: 5px; }
-.sun-pill { flex: 1; background: transparent; border: 1px solid rgba(240,201,122,0.25); border-radius: 10px; padding: 6px 5px; text-align: center; }
-.sun-label { font-size: 9px; color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase; }
-.sun-value { font-family: var(--font-serif); font-size: 12px; color: var(--text); margin-top: 2px; }
-#cal-block { flex: 1; padding: 18px 18px 14px; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
-#cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-shrink: 0; }
-#cal-month { font-family: var(--font-serif); font-size: 24px; color: var(--text); font-weight: 400; }
-#cal-right { display: flex; align-items: center; gap: 8px; }
-#cal-status { font-size: 10px; color: var(--text-muted); font-style: italic; }
-#cal-nav { display: flex; gap: 4px; }
-#cal-nav button { background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: var(--text); width: 25px; height: 25px; border-radius: 7px; cursor: pointer; font-size: 13px; transition: background 0.2s; }
-#cal-nav button:hover { background: rgba(240,201,122,0.18); }
-#cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; flex: 1; min-height: 0; }
-.cal-dow { text-align: center; font-size: 10px; font-weight: 500; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; padding-bottom: 5px; }
-.cal-day { background: transparent; border: 1px solid transparent; border-radius: 9px; padding: 4px 3px 2px; display: flex; flex-direction: column; overflow: hidden; transition: background 0.15s; min-height: 0; }
-.cal-day.has-content { background: transparent; }
-.cal-day:hover { background: rgba(255,255,255,0.10); }
-.cal-day-num { font-family: var(--font-serif); font-size: 13px; color: var(--text-dim); line-height: 1; flex-shrink: 0; }
-.cal-day.today { background: rgba(240,201,122,0.18); border-color: var(--accent); }
-.cal-day.today .cal-day-num { color: var(--accent); font-weight: 700; }
-.cal-day.other-month .cal-day-num { opacity: 0.2; }
-.cal-event { margin-top: 3px; padding: 2px 4px; border-radius: 6px; font-size: 9px; color: white; background: rgba(122,184,240,0.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cal-more { font-size: 8px; color: var(--text-muted); padding: 0 2px; }
-#upcoming-block { padding: 13px 16px; flex-shrink: 0; }
-#upcoming-list { display: flex; flex-direction: column; gap: 5px; margin-top: 7px; }
-.upcoming-item { display: flex; align-items: center; gap: 9px; padding: 6px 9px; background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 9px; }
-.upcoming-date { font-family: var(--font-serif); font-size: 11px; color: var(--accent); white-space: nowrap; min-width: 88px; }
-.upcoming-title { font-size: 12px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 300; }
-#fish-block, #tide-block, #solar-block { padding: 14px 16px; }
-#fish-header { display: flex; align-items: center; gap: 12px; margin: 8px 0 12px; }
-#fish-score { font-family: var(--font-serif); font-size: 60px; font-weight: 700; line-height: 1; text-shadow: 0 2px 18px rgba(0,0,0,0.35); }
-#fish-score-sub { font-size: 11px; color: var(--text-muted); font-weight: 300; }
-#fish-score-label { font-size: 13px; color: var(--text-dim); margin-top: 3px; font-weight: 300; font-style: italic; }
-.bar-row { margin-bottom: 7px; }
-.bar-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-bottom: 3px; font-weight: 300; }
-.bar-track { height: 5px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
-.bar-fill { height: 100%; border-radius: 4px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
-#fish-tip { margin-top: 10px; font-size: 11px; color: var(--text-muted); font-style: italic; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 9px; font-weight: 300; }
-#tide-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-.tide-item { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 9px; }
-.tide-left { display: flex; align-items: center; gap: 7px; }
-.tide-icon { font-size: 15px; }
-.tide-type { font-family: var(--font-serif); font-size: 13px; color: var(--text-dim); }
-.tide-time { font-size: 11px; color: var(--text-muted); font-weight: 300; }
-.tide-ht { font-family: var(--font-serif); font-size: 14px; color: var(--accent); }
-#solar-block { flex: 1; }
-#solar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
-.solar-item { background: transparent; border: 1px solid rgba(255,255,255,0.10); border-radius: 9px; padding: 8px 9px; text-align: center; }
-.solar-label { font-size: 9px; color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase; font-weight: 400; }
-.solar-value { font-family: var(--font-serif); font-size: 15px; color: var(--text); margin-top: 3px; }
-#settings-btn { position: fixed; top: 13px; right: 13px; z-index: 100; background: transparent; border: 1px solid rgba(255,255,255,0.18); backdrop-filter: blur(10px); color: var(--text); border-radius: 50%; width: 33px; height: 33px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
-#settings-btn:hover { background: rgba(255,255,255,0.15); }
-#settings-panel { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.86); backdrop-filter: blur(24px); overflow-y: auto; padding: 38px 30px; }
-.s-inner { max-width: 700px; margin: 0 auto; }
-.s-title { font-family: var(--font-serif); font-size: 30px; color: var(--text); margin-bottom: 5px; }
-.s-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; font-weight: 300; }
-.s-section { margin-bottom: 24px; }
-.s-section-title { font-size: 10px; font-weight: 500; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; margin-bottom: 11px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
-.s-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
-.s-field { display: flex; flex-direction: column; gap: 5px; }
-.s-field.full { grid-column: 1/-1; }
-.s-field label { font-size: 12px; color: var(--text-muted); font-weight: 300; }
-.s-field input, .s-field select { background: rgba(255,255,255,0.07); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: var(--text); font-size: 13px; font-family: var(--font-sans); outline: none; transition: border-color 0.2s; }
-.s-field input:focus, .s-field select:focus { border-color: var(--accent); }
-.s-field select option { background: #0d1520; }
-.s-note { font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 3px; line-height: 1.5; font-weight: 300; }
-.s-actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
-.btn { padding: 10px 22px; border-radius: 9px; border: none; font-family: var(--font-sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-.btn-primary { background: var(--accent); color: #1a1200; }
-.btn-primary:hover { opacity: 0.85; }
-.btn-secondary { background: rgba(255,255,255,0.09); color: var(--text); border: 1px solid var(--border); }
-.btn-secondary:hover { background: rgba(255,255,255,0.15); }
-.color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
-.color-swatch { width: 33px; height: 33px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
-.color-swatch.active { border-color: white; transform: scale(1.12); }
-.loading { opacity: 0.5; animation: pulse 1.5s infinite; }
-@keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:0.75} }
-.status-error { color: #ffb3b3; }
-@media (max-width: 1180px) {
-  html, body { overflow: auto; }
-  #app { position: relative; height: auto; min-height: 100vh; grid-template-columns: 1fr; overflow: visible; }
-}
+  :root {
+    --bg: #000;
+    --overlay: rgba(0,0,0,0.42);
+    --glass: rgba(0,0,0,0.38);
+    --glass-border: rgba(255,255,255,0.14);
+    --text: #ffffff;
+    --text-dim: rgba(255,255,255,0.80);
+    --text-muted: rgba(255,255,255,0.48);
+    --accent: #f0c97a;
+    --accent2: #7ab8f0;
+    --accent3: #f07ab8;
+    --radius: 16px;
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; background: #111; font-family: var(--font-body); overflow: hidden; }
+
+  /* ── BACKGROUND ── */
+  #bg {
+    position: fixed; inset: 0; z-index: 0;
+    background: #1a2a3a center/cover no-repeat;
+    transition: opacity 1.4s ease;
+  }
+  #bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--overlay);
+  }
+  #bg.fade { opacity: 0; }
+
+  /* ── LAYOUT: two-column grid ── */
+  #dashboard {
+    position: fixed; inset: 0; z-index: 10;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: auto 1fr auto;
+    gap: 0;
+    padding: 24px 20px 20px 24px;
+  }
+
+  /* ── LEFT COLUMN ── */
+  #left-col {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-right: 18px;
+  }
+
+  /* ── RIGHT COLUMN ── */
+  #right-col {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+  }
+
+  /* ── CLOCK ── */
+  #clock-block {}
+  #clock {
+    font-family: var(--font-display);
+    font-size: clamp(68px, 13vw, 118px);
+    color: var(--text);
+    line-height: 0.95;
+    letter-spacing: -1px;
+    text-shadow: 0 3px 30px rgba(0,0,0,0.7);
+  }
+  #clock sup {
+    font-size: 0.32em;
+    vertical-align: top;
+    margin-top: 12px;
+    font-family: var(--font-body);
+    font-weight: 200;
+    letter-spacing: 1px;
+    opacity: 0.9;
+  }
+  #date-line {
+    font-size: clamp(14px, 2.2vw, 19px);
+    font-weight: 300;
+    color: var(--text-dim);
+    margin-top: 6px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── SPACER ── */
+  .spacer { flex: 1; }
+
+  /* ── WEATHER ── */
+  #weather-block {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(16px);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+
+  #weather-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  #weather-icon-main { font-size: 42px; line-height: 1; }
+  #weather-temp {
+    font-family: var(--font-display);
+    font-size: clamp(44px, 8vw, 72px);
+    color: var(--text);
+    line-height: 1;
+  }
+  #weather-info { padding-bottom: 2px; }
+  #weather-feels, #weather-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 300;
+    line-height: 1.6;
+  }
+  #weather-loading { color: var(--text-muted); font-size: 13px; font-style: italic; padding: 8px 0; }
+
+  /* Forecast row */
+  #forecast-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #forecast-row::-webkit-scrollbar { display: none; }
+  .forecast-day {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; min-width: 60px; flex: 1;
+  }
+  .forecast-day .day-label { color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+  .forecast-day .day-icon { font-size: 18px; }
+  .forecast-day .day-rain { color: var(--accent2); font-size: 9px; }
+  .forecast-day .day-hi { color: var(--text); font-size: 13px; font-weight: 500; }
+  .forecast-day .day-lo { color: var(--text-muted); font-size: 11px; }
+
+  /* Hourly */
+  #hourly-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  #hourly-row::-webkit-scrollbar { display: none; }
+  .hourly-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; min-width: 40px;
+    font-size: 10px; color: var(--text-muted);
+  }
+  .hourly-item .h-icon { font-size: 15px; }
+  .hourly-item .h-temp { color: var(--text); font-size: 11px; }
+
+  /* ── CALENDAR (RIGHT COLUMN) ── */
+  #cal-block {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(16px);
+    border-radius: var(--radius);
+    padding: 18px 18px 16px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  #cal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+  }
+  #cal-month {
+    font-family: var(--font-display);
+    font-size: 22px; color: var(--text);
+    letter-spacing: 0.3px;
+  }
+  #cal-nav { display: flex; gap: 6px; }
+  #cal-nav button {
+    background: rgba(255,255,255,0.1); border: none;
+    color: var(--text); width: 26px; height: 26px;
+    border-radius: 8px; cursor: pointer; font-size: 14px;
+    transition: background 0.2s;
+  }
+  #cal-nav button:hover { background: rgba(255,255,255,0.22); }
+
+  #cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    flex: 1;
+  }
+  .cal-dow {
+    text-align: center; font-size: 9px; font-weight: 500;
+    color: var(--text-muted); padding: 0 0 8px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .cal-day {
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    font-size: 14px; color: var(--text-dim);
+    border-radius: 10px;
+    cursor: default;
+    transition: background 0.15s;
+    min-height: 36px;
+    position: relative;
+  }
+  .cal-day:hover { background: rgba(255,255,255,0.08); }
+  .cal-day.other-month { color: var(--text-muted); opacity: 0.35; }
+  .cal-day.today {
+    background: var(--accent);
+    color: #1a1200;
+    font-weight: 700;
+  }
+  .cal-day.has-event::after {
+    content: '';
+    display: block; width: 4px; height: 4px;
+    background: var(--accent2); border-radius: 50%;
+    position: absolute; bottom: 4px;
+  }
+  .cal-day.today.has-event::after { background: rgba(0,0,0,0.4); }
+
+  /* Events */
+  #events-list {
+    margin-top: 12px;
+    display: flex; flex-direction: column; gap: 6px;
+    flex-shrink: 0;
+  }
+  #events-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted); margin-bottom: 2px; font-weight: 500;
+  }
+  .event-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 6px 10px;
+  }
+  .event-dot {
+    width: 8px; height: 8px; border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .event-title { color: var(--text-dim); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .event-time { color: var(--text-muted); font-size: 10px; flex-shrink: 0; }
+
+  /* ── SETTINGS BUTTON ── */
+  #settings-btn {
+    position: fixed; top: 14px; right: 14px; z-index: 100;
+    background: rgba(0,0,0,0.45); border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    color: var(--text); border-radius: 50%;
+    width: 34px; height: 34px; font-size: 15px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  #settings-btn:hover { background: rgba(255,255,255,0.18); }
+
+  /* ── SETTINGS PANEL ── */
+  #settings-panel {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(24px);
+    display: flex; flex-direction: column;
+    padding: 30px 24px;
+    gap: 14px;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+  #settings-panel.open { transform: translateX(0); }
+  #settings-title {
+    font-family: var(--font-display);
+    font-size: 28px; color: var(--text);
+    letter-spacing: 0.5px;
+  }
+  #close-settings {
+    position: absolute; top: 20px; right: 20px;
+    background: none; border: none; color: var(--text);
+    font-size: 22px; cursor: pointer; opacity: 0.7;
+  }
+  #close-settings:hover { opacity: 1; }
+  .setting-group {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .setting-group h3 {
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 2px; color: var(--accent);
+  }
+  .setting-row { display: flex; flex-direction: column; gap: 4px; }
+  .setting-row label { font-size: 12px; color: var(--text-dim); }
+  .setting-row input, .setting-row select {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--glass-border);
+    color: var(--text); border-radius: 8px;
+    padding: 8px 10px; font-size: 13px;
+    font-family: var(--font-body); width: 100%;
+  }
+  .setting-row input::placeholder { color: var(--text-muted); }
+  .setting-row input:focus, .setting-row select:focus { outline: none; border-color: var(--accent); }
+  .setting-row select option { background: #222; }
+
+  .photo-thumbs {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;
+  }
+  .photo-thumb {
+    width: 60px; height: 60px; border-radius: 8px;
+    object-fit: cover; border: 2px solid transparent;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .photo-thumb.active { border-color: var(--accent); }
+  .photo-thumb:hover { border-color: rgba(255,255,255,0.4); }
+
+  .btn-primary {
+    background: var(--accent); color: #1a1200;
+    border: none; border-radius: 8px; padding: 10px 18px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: var(--font-body); transition: opacity 0.2s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary {
+    background: rgba(255,255,255,0.1); color: var(--text);
+    border: 1px solid var(--glass-border); border-radius: 8px;
+    padding: 10px 18px; font-size: 13px; cursor: pointer;
+    font-family: var(--font-body); transition: background 0.2s;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── GCAL OVERLAY ── */
+  #gcal-embed {
+    display: none;
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.92);
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; padding: 24px;
+  }
+  #gcal-embed.show { display: flex; }
+  #gcal-embed iframe { width: 100%; flex: 1; border: none; border-radius: var(--radius); }
+  #gcal-close {
+    background: var(--accent); color: #1a1200;
+    border: none; border-radius: 8px; padding: 10px 28px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: var(--font-body);
+  }
+
+  /* ── PHOTO CREDIT ── */
+  #photo-credit {
+    position: fixed; bottom: 14px; right: 14px; z-index: 20;
+    font-size: 10px; color: rgba(255,255,255,0.4);
+    font-family: var(--font-body); font-weight: 300;
+    letter-spacing: 0.3px;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
+
 <div id="bg"></div>
-<button id="settings-btn" onclick="openSettings()" title="Settings">⚙️</button>
-<div id="app">
-  <div id="col-left">
-    <div class="panel" id="clock-block">
-      <div id="clock-time"><span id="cl-h">12</span><span id="clock-sep" style="opacity:0.5">:</span><span id="cl-m">00</span><span id="clock-ampm">AM</span></div>
-      <div id="clock-date">Loading…</div>
+<button id="settings-btn" onclick="toggleSettings()" title="Settings">⚙️</button>
+<div id="photo-credit"></div>
+
+<div id="dashboard">
+
+  <!-- LEFT COLUMN -->
+  <div id="left-col">
+
+    <div id="clock-block">
+      <div id="clock">12:00<sup id="ampm-sec">00</sup></div>
+      <div id="date-line">Loading…</div>
     </div>
-    <div class="panel" id="weather-block">
-      <div class="section-label" id="weather-loc-label">📍 Pikesville, MD</div>
-      <div id="weather-main">
-        <div id="weather-icon" class="loading">🌤</div>
-        <div>
-          <div id="weather-temp" class="loading">--°</div>
-          <div id="weather-desc" class="loading">Loading weather…</div>
+
+    <div class="spacer"></div>
+
+    <!-- WEATHER -->
+    <div id="weather-block">
+      <div id="weather-loading">Fetching weather…</div>
+      <div id="weather-main" style="display:none">
+        <div id="weather-icon-main">⛅</div>
+        <div id="weather-temp">--°</div>
+        <div id="weather-info">
           <div id="weather-feels">Feels like --°</div>
+          <div id="weather-desc">--</div>
         </div>
       </div>
-      <div class="w-grid">
-        <div class="w-stat"><div class="w-stat-label">Wind</div><div class="w-stat-value" id="w-wind">--</div></div>
-        <div class="w-stat"><div class="w-stat-label">Humidity</div><div class="w-stat-value" id="w-hum">--</div></div>
-        <div class="w-stat"><div class="w-stat-label">Pressure</div><div class="w-stat-value" id="w-pres">--</div></div>
-        <div class="w-stat"><div class="w-stat-label">Precip</div><div class="w-stat-value" id="w-rain">--</div></div>
-      </div>
-      <div id="forecast-row"></div>
-      <div id="sun-row">
-        <div class="sun-pill"><div class="sun-label">🌙 Moon</div><div class="sun-value" id="moon-val">--</div></div>
-        <div class="sun-pill"><div class="sun-label">🌅 Rise</div><div class="sun-value" id="sunrise-val">--</div></div>
-        <div class="sun-pill"><div class="sun-label">🌇 Set</div><div class="sun-value" id="sunset-val">--</div></div>
-      </div>
+      <div id="forecast-row" style="display:none"></div>
+      <div id="hourly-row" style="display:none"></div>
     </div>
+
   </div>
-  <div id="col-center">
-    <div class="panel" id="cal-block">
+
+  <!-- RIGHT COLUMN: CALENDAR -->
+  <div id="right-col">
+    <div id="cal-block">
       <div id="cal-header">
-        <div id="cal-month">Loading…</div>
-        <div id="cal-right">
-          <div id="cal-status">⏳ Syncing…</div>
-          <div id="cal-nav">
-            <button onclick="changeViewMonth(-1)">‹</button>
-            <button onclick="changeViewMonth(1)">›</button>
-          </div>
+        <div id="cal-month">Month YYYY</div>
+        <div id="cal-nav">
+          <button onclick="changeMonth(-1)">‹</button>
+          <button onclick="changeMonth(1)">›</button>
         </div>
       </div>
       <div id="cal-grid"></div>
-    </div>
-    <div class="panel" id="upcoming-block">
-      <div class="section-label">📅 Upcoming Events</div>
-      <div id="upcoming-list"><div class="loading" style="font-size:12px;color:var(--text-muted);padding:4px 0">Loading calendar…</div></div>
+      <div id="events-list"></div>
     </div>
   </div>
-  <div id="col-right">
-    <div class="panel" id="fish-block">
-      <div class="section-label" id="fish-loc-label">� Fishing — Dundee Creek, Middle River</div>
-      <div id="fish-header">
-        <div id="fish-score" class="loading">--</div>
-        <div><div id="fish-score-sub">out of 10</div><div id="fish-score-label">Calculating live conditions…</div></div>
-      </div>
-      <div class="bar-row"><div class="bar-labels"><span>Wind</span><span id="fb-wind-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-wind" style="width:0%;background:var(--good)"></div></div></div>
-      <div class="bar-row"><div class="bar-labels"><span>Temperature</span><span id="fb-temp-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-temp" style="width:0%;background:var(--accent)"></div></div></div>
-      <div class="bar-row"><div class="bar-labels"><span>Pressure</span><span id="fb-pres-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-pres" style="width:0%;background:var(--accent2)"></div></div></div>
-      <div class="bar-row"><div class="bar-labels"><span>Cloud Cover</span><span id="fb-cloud-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-cloud" style="width:0%;background:var(--warn)"></div></div></div>
-      <div id="fish-tip">Waiting for live weather feed…</div>
+
+</div>
+
+<!-- Settings Panel -->
+<div id="settings-panel">
+  <button id="close-settings" onclick="toggleSettings()">✕</button>
+  <div id="settings-title">Display Settings</div>
+
+  <!-- Photos -->
+  <div class="setting-group">
+    <h3>📸 Background Photos</h3>
+    <div class="setting-row">
+      <label>Add photo URL (direct image link)</label>
+      <input type="url" id="photo-url-input" placeholder="https://…" />
     </div>
-    <div class="panel" id="tide-block">
-      <div class="section-label" id="tide-loc-label">🌊 Tides — Middle River, MD</div>
-      <div id="tide-list"><div class="loading" style="font-size:12px;color:var(--text-muted)">Loading tides…</div></div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="addPhotoUrl()">Add Photo</button>
+      <label class="btn-secondary" style="display:inline-flex;align-items:center;cursor:pointer;">
+        Upload from Device
+        <input type="file" accept="image/*" id="photo-file-input" style="display:none" onchange="addPhotoFile(event)" multiple />
+      </label>
     </div>
-    <div class="panel" id="solar-block">
-      <div class="section-label">☀️ Solar & Moon</div>
-      <div id="solar-grid">
-        <div class="solar-item"><div class="solar-label">Moon Phase</div><div class="solar-value" id="sol-moon">--</div></div>
-        <div class="solar-item"><div class="solar-label">Illumination</div><div class="solar-value" id="sol-illum">--</div></div>
-        <div class="solar-item"><div class="solar-label">Golden Hour</div><div class="solar-value" id="sol-gold">--</div></div>
-        <div class="solar-item"><div class="solar-label">Wind Dir</div><div class="solar-value" id="sol-winddir">--</div></div>
-      </div>
+    <div class="photo-thumbs" id="photo-thumbs"></div>
+    <div class="setting-row">
+      <label>Slideshow interval</label>
+      <select id="slide-interval" onchange="updateSlideshowInterval()">
+        <option value="20">20 seconds</option>
+        <option value="30">30 seconds</option>
+        <option value="60" selected>1 minute</option>
+        <option value="300">5 minutes</option>
+        <option value="600">10 minutes</option>
+        <option value="0">Manual only</option>
+      </select>
     </div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="prevPhoto()">⬅ Prev</button>
+      <button class="btn-secondary" onclick="nextPhoto()">Next ➡</button>
+    </div>
+  </div>
+
+  <!-- Weather -->
+  <div class="setting-group">
+    <h3>🌤 Weather</h3>
+    <div class="setting-row">
+      <label>ZIP Code</label>
+      <input type="text" id="zip-input" placeholder="e.g. 08054" maxlength="5" />
+    </div>
+    <div class="setting-row">
+      <label>Temperature Unit</label>
+      <select id="temp-unit" onchange="saveWeatherSettings()">
+        <option value="fahrenheit">Fahrenheit (°F)</option>
+        <option value="celsius">Celsius (°C)</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveWeatherSettings()">Update Weather</button>
+    <p style="font-size:10px;color:var(--text-muted);line-height:1.5;" id="weather-status"></p>
+  </div>
+
+  <!-- Calendar -->
+  <div class="setting-group">
+    <h3>📅 Google Calendar</h3>
+    <div class="setting-row">
+      <label>Google Calendar Embed URL</label>
+      <input type="url" id="gcal-url-input" placeholder="https://calendar.google.com/calendar/embed?src=…" />
+    </div>
+    <div class="setting-row">
+      <label>Google Calendar iCal URL (for event dots)</label>
+      <input type="url" id="gcal-ical-input" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" />
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="saveCalSettings()">Save Calendar</button>
+      <button class="btn-secondary" onclick="openGCalEmbed()">View Full Calendar</button>
+    </div>
+    <p style="font-size:10px;color:var(--text-muted);line-height:1.5;">
+      Google Calendar → Settings → [Your Calendar] → "Integrate calendar" → copy embed URL & iCal URL.
+    </p>
+  </div>
+
+  <!-- Display -->
+  <div class="setting-group">
+    <h3>🖥 Display</h3>
+    <div class="setting-row">
+      <label>Clock format</label>
+      <select id="clock-format">
+        <option value="12">12-hour</option>
+        <option value="24">24-hour</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveDisplaySettings()">Save</button>
   </div>
 </div>
-<div id="settings-panel">
-  <div class="s-inner">
-    <div class="s-title">Display Settings</div>
-    <div class="s-subtitle">Press S to toggle this panel at any time.</div>
-    <div class="s-section">
-      <div class="s-section-title">📍 Locations</div>
-      <div class="s-grid">
-        <div class="s-field"><label>Weather City Label</label><input id="s-city" placeholder="Pikesville, MD 21208"></div>
-        <div class="s-field"><label>Weather Lat / Lon</label><div style="display:flex;gap:5px"><input id="s-lat" placeholder="39.3934" style="flex:1"><input id="s-lon" placeholder="-76.6634" style="flex:1"></div></div>
-        <div class="s-field"><label>Fishing Location Name</label><input id="s-fish-name" placeholder="Dundee Creek, Middle River"></div>
-        <div class="s-field"><label>NOAA Tide Station ID</label><input id="s-tide-station" placeholder="8574680"><div class="s-note">NOAA predictions use a station ID.</div></div>
-      </div>
-    </div>
-    <div class="s-section">
-      <div class="s-section-title">📅 Google Calendar — No API Key Needed</div>
-      <div class="s-grid">
-        <div class="s-field full">
-          <label>Google Calendar iCal URL</label>
-          <input id="s-ical-url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics">
-          <div class="s-note">Paste your secret iCal URL. This live version fetches the ICS feed directly and refreshes every 60 seconds.</div>
-        </div>
-      </div>
-    </div>
-    <div class="s-section">
-      <div class="s-section-title">🖼️ Background Photo</div>
-      <div class="s-grid">
-        <div class="s-field full"><label>Background Image URL</label><input id="s-bg" placeholder="https://…"></div>
-      </div>
-    </div>
-    <div class="s-section">
-      <div class="s-section-title">🎨 Accent Color</div>
-      <div class="color-row" id="color-row">
-        <div class="color-swatch active" data-color="#f0c97a" style="background:#f0c97a"></div>
-        <div class="color-swatch" data-color="#7ab8f0" style="background:#7ab8f0"></div>
-        <div class="color-swatch" data-color="#7adba0" style="background:#7adba0"></div>
-        <div class="color-swatch" data-color="#f07a7a" style="background:#f07a7a"></div>
-        <div class="color-swatch" data-color="#b87af0" style="background:#b87af0"></div>
-        <div class="color-swatch" data-color="#7af0e8" style="background:#7af0e8"></div>
-        <div class="color-swatch" data-color="#f0a07a" style="background:#f0a07a"></div>
-        <div class="color-swatch" data-color="#c8d0e0" style="background:#c8d0e0"></div>
-      </div>
-    </div>
-    <div class="s-section">
-      <div class="s-section-title">🕐 Display</div>
-      <div class="s-grid">
-        <div class="s-field"><label>Time Format</label><select id="s-timefmt"><opti
+
+<!-- Full Calendar Overlay -->
+<div id="gcal-embed">
+  <iframe id="gcal-iframe" src="about:blank" allowfullscreen></iframe>
+  <button id="gcal-close" onclick="closeGCalEmbed()">Close Calendar</button>
+</div>
+
+<script>
+/* ═══ STATE ═══ */
+let state = {
+  photos: [],
+  photoIndex: 0,
+  slideshowInterval: 60,
+  zip: '08054',
+  gcalEmbedUrl: '',
+  gcalIcalUrl: '',
+  clockFormat: '12',
+  tempUnit: 'fahrenheit',
+  weatherData: null,
+  calEvents: [],
+  viewMonth: new Date().getMonth(),
+  viewYear: new Date().getFullYear(),
+};
+
+// Pre-loaded Google Photos from the shared album (extracted from album page)
+const GOOGLE_PHOTOS = [
+  'https://lh3.googleusercontent.com/pw/AP1GczMmuMo-VlOqZN-wEgVF2XhCqZatam8NU8aK6LkURDLfLAPkQyfb0lIcrMFcBtfpC81fKjlB4gUQ_HqsaSZKncMIUlESIRiE5deumBUO4YB8dHilPWrz=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczP2BAG28u6tNyF0jYZffGaHKcXusk7r84ksOKyVZbCzeZcK4F_xZLy01wCl2b-AdYI_UA8YcV6MZYYDOlG9ORQvGVQQXTjLFZaBgy10gdxDalqcNCDH=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczNAqqb2N79_gtKOboCQuTYaeVJhV7fB-Wy5sFkQN_LqbYmZ3C1ke4Wnz-rr6kufknRBa2ZuwzNuBcDRiy2Fb-jPMsoUqtTixgyRJsFEaorgcgWSVy0R=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczN7vVpFagQWACe-36bCZjpk_WZZtThcAlWCdhN3kQ3ePw8zs_a35XtWqPUN3YpISnBZJP6USWRTCUQ_Hetnb4I-_qi238e_9Csqi3tfojBO42ldZN85=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczPzBYvDzPc0KvY8bIviD2fMve5slFn3gh09eivvn6Zp4RSlU1jIdikwaBLVcKeuos25ALP2p_OI0P6OLMGZY5x1OUEEMrG_bZ-BtWa-LBC-sdY_fZZ_=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczNHW7yMxN3YcuDiHknopgPfuI-SDqrjxAJ4ElktXNswqh6dSqTZNHVnPOyClcU4P5C18Rc_Zoflr5-ZZZ_M_qDbcoOF5A2_YrIx78crWT9tdbI2fuaj=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczPGzj3pmxScVig9fsG3_4_gXn2gcOcwwAeBqsEz4j7RIVcydohhisTEk57_PacyZKin4KWr-Y38TTT-SdvOq6iGYYmKlCSbCAZgsPJ0w2ZlkPTLaif8=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczPYU0ygsJLfjHIfK5d_ZyyYS4cc9xK7xZ9NVo33YRdHtEyBGgoFHt51mHV8OLrL2IhNmq3nAZ_nYSfQV1BU9Dn978Hti1PFk2MLvWYLe2y47X9HwION=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczO27dsRabUSkI9ej6KVVRIaFmMidZggATRuVzOixXZzpNWgzK-K07ux9jXova0XNxzxt0dDqtnRhxTkGNNTfOLTah4gNUmmIzKvhGyWvHIXOFaIz_Ye=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczPaUKrFuv71NRfCx-uWqbuK2NB8uFFpRuCTtiLheC7onrGV_aUaAkRngFZBW-6lIINYqpSoJjFq8HvJSE2BOUUoQ5YCC3zOacyPA2GgBGEd84RjLd0N=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczPLi4Jb9xdaiFeMqu11s1Iqfhfd7rWT7xR2AJMB76dHvG7i8Br7mARrVMrdZ-r8hYkNOGMiA0rCy68W3BLUhcO2EIuZB1kztSFY1m_oglnupmbVT0Cn=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczMcdjMKFkHQxs-HJJjZbr0TYrDwuMrOncnv4LTBRmsqtoaPArXSV-ScOBhdg9DAxBgKx94w7SyCqrOcmkVzo7NK6NUwAGQXlLZZxqQ_YQvCGgbF1YTI=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczNiSFP7Y9i83PfdPjzerwnEuVol02JIqvYyB-BHlTD_AOVQ06KO7OaexwrROYVM3Kk10f-csKIAFCXt9raoRGgc2WHFvGurScEO58UjUheplI8wI7MG=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczNFg6L14hXkT8pzuES04x9-6JntL3f5ZrLjem0gNlUWds1uMTtSr6dB7WOSRdkFe0iYN3GSYYjM-tbXNAK01Ju_YGy0agZrUpml-QsrdQ78wuSo5LP2=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczMxi7gGhVWO417mFRanH8HcT6aDXmZXVUL-85pKBYViSNBxokqxJnyyk0elzOGJeRh_274SxCWaXQFYsgww4LsIaAlHW6E3pckxIMOc3n9D58jfFHrX=w1920-h1080-no',
+];
+
+let slideshowTimer = null;
+
+/* ─── LOAD / SAVE ─── */
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('smartdash_v2') || '{}');
+    if (saved.photos && saved.photos.length) state.photos = saved.photos;
+    if (saved.slideshowInterval !== undefined) state.slideshowInterval = saved.slideshowInterval;
+    if (saved.zip) state.zip = saved.zip;
+    if (saved.gcalEmbedUrl) state.gcalEmbedUrl = saved.gcalEmbedUrl;
+    if 
