@@ -1,37 +1,49 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fishing Dashboard Live</title>
-    <!-- Include any required CSS files here -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="app">
-        <h1>Welcome to the Fishing Dashboard Live!</h1>
-        <div id="weather">
+    <header>
+        <h1>Welcome to the Fishing Dashboard</h1>
+    </header>
+    <main>
+        <section>
             <h2>Weather Information</h2>
-            <!-- Weather API integration will go here -->
-        </div>
-        <div id="tide-predictions">
+            <div id="weather"></div>
+        </section>
+        <section>
             <h2>Tide Predictions</h2>
-            <!-- Tide predictions will go here -->
-        </div>
-        <div id="fishing-score">
+            <div id="tide-predictions"></div>
+        </section>
+        <section>
             <h2>Fishing Score Calculator</h2>
-            <!-- Fishing score calculator functionality will go here -->
-        </div>
-        <div id="settings">
-            <h2>Settings Panel</h2>
-            <!-- Settings panel functionality will go here -->
-        </div>
-        <div id="calendar">
+            <form id="score-calculator">
+                <input type="number" id="catch-weight" placeholder="Catch Weight (lbs)" required>
+                <button type="submit">Calculate Score</button>
+                <p>Your Fishing Score: <span id="fishing-score"></span></p>
+            </form>
+        </section>
+        <section>
             <h2>Calendar Functionality</h2>
-            <!-- Calendar functionality will go here -->
-        </div>
-    </div>
-    <script>
-        // JavaScript for handling weather API, tide predictions, fishing score, settings, and calendar functionality
-    </script>
+            <div id="calendar"></div>
+        </section>
+        <section>
+            <h2>Settings Panel</h2>
+            <div id="settings-panel">
+                <label for="units">Units:</label>
+                <select id="units">
+                    <option value="imperial">Imperial</option>
+                    <option value="metric">Metric</option>
+                </select>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2026 Fishing Dashboard Live 🌊 🎣</p>
+    </footer>
+    <script src="script.js"></script>
 </body>
 </html>
