@@ -2,39 +2,34 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Smart Wall Display</title>
+<title>Smart Fishing Display</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 
-body{
-  font-family:Inter;
-  background:#000;
-  overflow:hidden;
-}
+body{font-family:Inter;background:#000;overflow:hidden;}
 
-/* BACKGROUND (SHARP, NO BLUR) */
+/* BACKGROUND */
 #bg{
-  position:fixed;
-  inset:0;
+  position:fixed;inset:0;
   background-size:cover;
   background-position:center;
   filter:brightness(0.75);
 }
 
-/* MAIN LAYOUT */
+/* LAYOUT */
 #container{
   display:flex;
   height:100vh;
-  padding:50px;
-  gap:40px;
+  padding:40px;
+  gap:30px;
   position:relative;
   z-index:10;
 }
 
-/* LEFT PANEL */
+/* LEFT */
 #left{
   width:35%;
   display:flex;
@@ -42,98 +37,87 @@ body{
   justify-content:space-between;
 }
 
-/* CLOCK */
-#clock{
-  font-size:110px;
-  font-weight:300;
-  color:white;
-}
+#clock{font-size:100px;color:white;}
+#date{color:#ccc;font-size:22px;}
 
-#date{
-  font-size:24px;
-  color:rgba(255,255,255,0.8);
-  margin-top:10px;
-}
-
-/* WEATHER PANEL */
+/* WEATHER */
 #weather{
   background:rgba(0,0,0,0.5);
   padding:20px;
   border-radius:20px;
-  backdrop-filter:blur(10px);
   color:white;
 }
 
-/* WEATHER TOP */
-#weather-main{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
+#temp{font-size:60px;}
 
-#temp{
-  font-size:60px;
-}
-
-#desc{
-  font-size:18px;
-  opacity:0.8;
-}
-
-/* WEATHER DETAILS GRID */
-#weather-details{
-  margin-top:15px;
+#details{
   display:grid;
   grid-template-columns:repeat(2,1fr);
-  gap:10px;
-  font-size:14px;
+  gap:8px;
+  margin-top:10px;
 }
 
 .detail{
+  font-size:13px;
   background:rgba(255,255,255,0.05);
-  padding:10px;
-  border-radius:10px;
+  padding:8px;
+  border-radius:8px;
 }
 
-/* RIGHT SIDE */
+/* FORECAST */
+#forecast{
+  display:flex;
+  gap:10px;
+  margin-top:15px;
+}
+
+.daybox{
+  flex:1;
+  background:rgba(255,255,255,0.05);
+  border-radius:10px;
+  padding:8px;
+  text-align:center;
+  font-size:12px;
+}
+
+/* RIGHT CALENDAR */
 #right{
   flex:1;
-  background:rgba(0,0,0,0.45);
-  border-radius:25px;
-  padding:30px;
-  backdrop-filter:blur(15px);
-  display:flex;
-  flex-direction:column;
-}
-
-/* CALENDAR */
-#month{
-  font-size:30px;
-  color:white;
-  margin-bottom:20px;
+  background:rgba(0,0,0,0.4);
+  border-radius:20px;
+  padding:25px;
 }
 
 #calendar{
   display:grid;
   grid-template-columns:repeat(7,1fr);
   gap:10px;
-  flex:1;
 }
 
 .day{
   color:white;
-  font-size:22px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  padding:10px;
+  text-align:center;
+  border-radius:10px;
   background:rgba(255,255,255,0.05);
-  border-radius:12px;
 }
 
 .today{
   background:#f0c97a;
   color:black;
   font-weight:600;
+}
+
+/* SETTINGS */
+#settings{
+  position:fixed;
+  top:20px;
+  right:20px;
+  background:black;
+  padding:20px;
+  border-radius:10px;
+  display:none;
+  color:white;
 }
 </style>
 </head>
@@ -144,96 +128,146 @@ body{
 
 <div id="container">
 
-  <div id="left">
+<div id="left">
+  <div>
+    <div id="clock"></div>
+    <div id="date"></div>
+  </div>
 
-    <div>
-      <div id="clock"></div>
-      <div id="date"></div>
+  <div id="weather">
+    <div id="temp"></div>
+
+    <div id="details">
+      <div class="detail">Wind: <span id="wind"></span></div>
+      <div class="detail">Rain: <span id="rain"></span></div>
+      <div class="detail">Pressure: <span id="pressure"></span></div>
+      <div class="detail">Humidity: <span id="humidity"></span></div>
     </div>
 
-    <div id="weather">
-      <div id="weather-main">
-        <div id="temp">--°</div>
-        <div id="desc">Loading...</div>
-      </div>
+    <div id="forecast"></div>
 
-      <div id="weather-details">
-        <div class="detail">Wind: <span id="wind"></span></div>
-        <div class="detail">Rain: <span id="rain"></span></div>
-        <div class="detail">Pressure: <span id="pressure"></span></div>
-        <div class="detail">Humidity: <span id="humidity"></span></div>
-        <div class="detail">Feels: <span id="feels"></span></div>
-        <div class="detail">Clouds: <span id="clouds"></span></div>
-      </div>
+    <div style="margin-top:15px;">
+      <div class="detail">Moon: <span id="moon"></span></div>
+      <div class="detail">Tide: <span id="tide"></span></div>
     </div>
 
   </div>
+</div>
 
-  <div id="right">
-    <div id="month"></div>
-    <div id="calendar"></div>
-  </div>
+<div id="right">
+  <div id="calendar"></div>
+</div>
 
+</div>
+
+<!-- SETTINGS -->
+<div id="settings">
+  <h3>Settings</h3>
+  <input id="photoInput" placeholder="Image URL"><br><br>
+  <input id="latInput" placeholder="Latitude"><br><br>
+  <input id="lonInput" placeholder="Longitude"><br><br>
+  <button onclick="save()">Save</button>
 </div>
 
 <script>
 
-/* BACKGROUND IMAGE (HIGH QUALITY) */
-document.getElementById("bg").style.backgroundImage =
-"url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=3840')";
+/* SETTINGS */
+let settings = JSON.parse(localStorage.getItem("s")) || {
+  photo:"https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=3840",
+  lat:39.39,
+  lon:-76.78
+};
 
-/* CLOCK */
-function updateClock(){
-  const now = new Date();
-  document.getElementById("clock").innerText =
-    now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  document.getElementById("date").innerText =
-    now.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
+function save(){
+  settings.photo=document.getElementById("photoInput").value;
+  settings.lat=document.getElementById("latInput").value;
+  settings.lon=document.getElementById("lonInput").value;
+  localStorage.setItem("s",JSON.stringify(settings));
+  location.reload();
 }
-setInterval(updateClock,1000);
-updateClock();
 
-/* WEATHER (FULL DATA) */
-fetch("https://api.open-meteo.com/v1/forecast?latitude=39.39&longitude=-76.78&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,pressure_msl,cloud_cover,wind_speed_10m")
-.then(r=>r.json())
-.then(d=>{
-  const w = d.current;
+/* TOGGLE SETTINGS */
+document.addEventListener("keydown",e=>{
+  if(e.key==="s"){
+    let panel=document.getElementById("settings");
+    panel.style.display=panel.style.display==="block"?"none":"block";
 
-  document.getElementById("temp").innerText = Math.round(w.temperature_2m)+"°";
-  document.getElementById("desc").innerText = "Current";
-
-  document.getElementById("wind").innerText = w.wind_speed_10m + " mph";
-  document.getElementById("rain").innerText = w.precipitation + " mm";
-  document.getElementById("pressure").innerText = w.pressure_msl + " hPa";
-  document.getElementById("humidity").innerText = w.relative_humidity_2m + "%";
-  document.getElementById("feels").innerText = w.apparent_temperature + "°";
-  document.getElementById("clouds").innerText = w.cloud_cover + "%";
+    photoInput.value=settings.photo;
+    latInput.value=settings.lat;
+    lonInput.value=settings.lon;
+  }
 });
 
+/* BACKGROUND */
+bg.style.backgroundImage=`url(${settings.photo})`;
+
+/* CLOCK */
+setInterval(()=>{
+  let d=new Date();
+  clock.innerText=d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  date.innerText=d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'});
+},1000);
+
+/* WEATHER + FORECAST */
+fetch(`https://api.open-meteo.com/v1/forecast?latitude=${settings.lat}&longitude=${settings.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&current=temperature_2m,wind_speed_10m,pressure_msl,relative_humidity_2m`)
+.then(r=>r.json())
+.then(d=>{
+  temp.innerText=Math.round(d.current.temperature_2m)+"°";
+  wind.innerText=d.current.wind_speed_10m+" mph";
+  rain.innerText=d.daily.precipitation_sum[0]+" mm";
+  pressure.innerText=d.current.pressure_msl;
+  humidity.innerText=d.current.relative_humidity_2m+"%";
+
+  let html="";
+  for(let i=0;i<5;i++){
+    html+=`<div class="daybox">
+      ${Math.round(d.daily.temperature_2m_max[i])}°
+      <br>${Math.round(d.daily.temperature_2m_min[i])}°
+    </div>`;
+  }
+  forecast.innerHTML=html;
+});
+
+/* MOON PHASE */
+function getMoon(){
+  const now=new Date();
+  const lp=2551443;
+  const new_moon=new Date(1970,0,7,20,35,0);
+  const phase=((now-new_moon)/1000)%lp;
+  const index=Math.floor((phase/lp)*8);
+
+  const phases=["New","Waxing","Quarter","Gibbous","Full","Gibbous","Quarter","Crescent"];
+  moon.innerText=phases[index];
+}
+getMoon();
+
+/* TIDE */
+fetch("https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=web_services&begin_date=today&end_date=today&datum=MLLW&station=8574680&time_zone=lst_ldt&units=english&interval=hilo&format=json")
+.then(r=>r.json())
+.then(d=>{
+  let next=d.predictions[0];
+  tide.innerText=next.type==="H"?"High Tide":"Low Tide";
+})
+.catch(()=>tide.innerText="N/A");
+
 /* CALENDAR */
-function renderCalendar(){
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
+function cal(){
+  let d=new Date();
+  let year=d.getFullYear();
+  let month=d.getMonth();
 
-  document.getElementById("month").innerText =
-    now.toLocaleDateString([], {month:'long', year:'numeric'});
+  let first=new Date(year,month,1).getDay();
+  let days=new Date(year,month+1,0).getDate();
 
-  const first = new Date(year, month, 1).getDay();
-  const days = new Date(year, month+1, 0).getDate();
+  calendar.innerHTML="";
+  for(let i=0;i<first;i++) calendar.innerHTML+="<div></div>";
 
-  const cal = document.getElementById("calendar");
-  cal.innerHTML="";
-
-  for(let i=0;i<first;i++) cal.innerHTML += `<div></div>`;
-
-  for(let d=1; d<=days; d++){
-    const cls = d===now.getDate() ? "day today" : "day";
-    cal.innerHTML += `<div class="${cls}">${d}</div>`;
+  for(let i=1;i<=days;i++){
+    let cls=i===d.getDate()?"day today":"day";
+    calendar.innerHTML+=`<div class="${cls}">${i}</div>`;
   }
 }
-
-renderCalendar();
+cal();
 
 </script>
 
