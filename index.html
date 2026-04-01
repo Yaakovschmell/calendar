@@ -1047,8 +1047,11 @@ loadWeather();
 loadTides();
 loadCalendar();
 
-// Auto-refresh every 10 minutes
-setInterval(() => { loadWeather(); loadTides(); loadCalendar(); }, 10 * 60 * 1000);
+// Calendar syncs every 60 seconds — stays current without any page reload
+setInterval(() => { loadCalendar(); }, 60 * 1000);
+
+// Weather & tides refresh every 10 minutes (data doesn't change faster than that)
+setInterval(() => { loadWeather(); loadTides(); }, 10 * 60 * 1000);
 </script>
 </body>
 </html>
