@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart Display Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #000;
+    --overlay: rgba(0,0,0,0.42);
+    --glass: rgba(0,0,0,0.38);
+    --glass-border: rgba(255,255,255,0.14);
+    --text: #ffffff;
+    --text-dim: rgba(255,255,255,0.80);
+    --text-muted: rgba(255,255,255,0.48);
+    --accent: #f0c97a;
+    --accent2: #7ab8f0;
+    --accent3: #f07ab8;
+    --radius: 16px;
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; background: #111; font-family: var(--font-body); overflow: hidden; }
+
+  /* ── BACKGROUND ── */
+  #bg {
+    position: fixed; inset: 0; z-index: 0;
+    background: #1a2a3a center/cover no-repeat;
+    transition: opacity 1.4s ease;
+  }
+  #bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--overlay);
+  }
+  #bg.fade { opacity: 0; }
+
+  /* ── LAYOUT: two-column grid ── */
+  #dashboard {
+    position: fixed; inset: 0; z-index: 10;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: auto 1fr auto;
+    gap: 0;
+    padding: 24px 20px 20px 24px;
+  }
+
+  /* ── LEFT COLUMN ── */
+  #left-col {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-right: 18px;
+  }
+
+  /* ── RIGHT COLUMN ── */
+  #right-col {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+  }
+
+  /* ── CLOCK ── */
+  #clock-block {}
+  #clock {
+    font-family: var(--font-display);
+    font-size: clamp(68px, 13vw, 118px);
+    color: var(--text);
+    line-height: 0.95;
+    letter-spacing: -1px;
+    text-shadow: 0 3px 30px rgba(0,0,0,0.7);
+  }
+  #clock sup {
+    font-size: 0.32em;
+    vertical-align: top;
+    margin-top: 12px;
+    font-family: var(--font-body);
+    font-weight: 200;
+    letter-spacing: 1px;
+    opacity: 0.9;
+  }
+  #date-line {
+    font-size: clamp(14px, 2.2vw, 19px);
+    font-weight: 300;
+    color: var(--text-dim);
+    margin-top: 6px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── SPACER ── */
+  .spacer { flex: 1; }
+
+  /* ── WEATHER ── */
+  #weather-block {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(16px);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+
+  #weather-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  #weather-icon-main { font-size: 42px; line-height: 1; }
+  #weather-temp {
+    font-family: var(--font-display);
+    font-size: clamp(44px, 8vw, 72px);
+    color: var(--text);
+    line-height: 1;
+  }
+  #weather-info { padding-bottom: 2px; }
+  #weather-feels, #weather-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 300;
+    line-height: 1.6;
+  }
+  #weather-loading { color: var(--text-muted); font-size: 13px; font-style: italic; padding: 8px 0; }
+
+  /* Forecast row */
+  #forecast-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #forecast-row::-webkit-scrollbar { display: none; }
+  .forecast-day {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; min-width: 60px; flex: 1;
+  }
+  .forecast-day .day-label { color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+  .forecast-day .day-icon { font-size: 18px; }
+  .forecast-day .day-rain { color: var(--accent2); font-size: 9px; }
+  .forecast-day .day-hi { color: var(--text); font-size: 13px; font-weight: 500; }
+  .forecast-day .day-lo { color: var(--text-muted); font-size: 11px; }
+
+  /* Hourly */
+  #hourly-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  #hourly-row::-webkit-scrollbar { display: none; }
+  .hourly-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; min-width: 40px;
+    font-size: 10px; color: var(--text-muted);
+  }
+  .hourly-item .h-icon { font-size: 15px; }
+  .hourly-item .h-temp { color: var(--text); font-size: 11px; }
+
+  /* ── CALENDAR (RIGHT COLUMN) ── */
+  #cal-block {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(16px);
+    border-radius: var(--radius);
+    padding: 18px 18px 16px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  #cal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+  }
+  #cal-month {
+    font-family: var(--font-display);
+    font-size: 22px; color: var(--text);
+    letter-spacing: 0.3px;
+  }
+  #cal-nav { display: flex; gap: 6px; }
+  #cal-nav button {
+    background: rgba(255,255,255,0.1); border: none;
+    color: var(--text); width: 26px; height: 26px;
+    border-radius: 8px; cursor: pointer; font-size: 14px;
+    transition: background 0.2s;
+  }
+  #cal-nav button:hover { background: rgba(255,255,255,0.22); }
+
+  #cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    flex: 1;
+  }
+  .cal-dow {
+    text-align: center; font-size: 9px; font-weight: 500;
+    color: var(--text-muted); padding: 0 0 8px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .cal-day {
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    font-size: 14px; color: var(--text-dim);
+    border-radius: 10px;
+    cursor: default;
+    transition: background 0.15s;
+    min-height: 36px;
+    position: relative;
+  }
+  .cal-day:hover { background: rgba(255,255,255,0.08); }
+  .cal-day.other-month { color: var(--text-muted); opacity: 0.35; }
+  .cal-day.today {
+    background: var(--accent);
+    color: #1a1200;
+    font-weight: 700;
+  }
+  .cal-day.has-event::after {
+    content: '';
+    display: block; width: 4px; height: 4px;
+    background: var(--accent2); border-radius: 50%;
+    position: absolute; bottom: 4px;
+  }
+  .cal-day.today.has-event::after { background: rgba(0,0,0,0.4); }
+
+  /* Events */
+  #events-list {
+    margin-top: 12px;
+    display: flex; flex-direction: column; gap: 6px;
+    flex-shrink: 0;
+  }
+  #events-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted); margin-bottom: 2px; font-weight: 500;
+  }
+  .event-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 6px 10px;
+  }
+  .event-dot {
+    width: 8px; height: 8px; border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .event-title { color: var(--text-dim); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .event-time { color: var(--text-muted); font-size: 10px; flex-shrink: 0; }
+
+  /* ── SETTINGS BUTTON ── */
+  #settings-btn {
+    position: fixed; top: 14px; right: 14px; z-index: 100;
+    background: rgba(0,0,0,0.45); border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    color: var(--text); border-radius: 50%;
+    width: 34px; height: 34px; font-size: 15px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  #settings-btn:hover { background: rgba(255,255,255,0.18); }
+
+  /* ── SETTINGS PANEL ── */
+  #settings-panel {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(24px);
+    display: flex; flex-direction: column;
+    padding: 30px 24px;
+    gap: 14px;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+  #settings-panel.open { transform: translateX(0); }
+  #settings-title {
+    font-family: var(--font-display);
+    font-size: 28px; color: var(--text);
+    letter-spacing: 0.5px;
+  }
+  #close-settings {
+    position: absolute; top: 20px; right: 20px;
+    background: none; border: none; color: var(--text);
+    font-size: 22px; cursor: pointer; opacity: 0.7;
+  }
+  #close-settings:hover { opacity: 1; }
+  .setting-group {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .setting-group h3 {
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 2px; color: var(--accent);
+  }
+  .setting-row { display: flex; flex-direction: column; gap: 4px; }
+  .setting-row label { font-size: 12px; color: var(--text-dim); }
+  .setting-row input, .setting-row select {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--glass-border);
+    color: var(--text); border-radius: 8px;
+    padding: 8px 10px; font-size: 13px;
+    font-family: var(--font-body); width: 100%;
+  }
+  .setting-row input::placeholder { color: var(--text-muted); }
+  .setting-row input:focus, .setting-row select:focus { outline: none; border-color: var(--accent); }
+  .setting-row select option { background: #222; }
+
+  .photo-thumbs {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;
+  }
+  .photo-thumb {
+    width: 60px; height: 60px; border-radius: 8px;
+    object-fit: cover; border: 2px solid transparent;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .photo-thumb.active { border-color: var(--accent); }
+  .photo-thumb:hover { border-color: rgba(255,255,255,0.4); }
+
+  .btn-primary {
+    background: var(--accent); color: #1a1200;
+    border: none; border-radius: 8px; padding: 10px 18px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: var(--font-body); transition: opacity 0.2s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary {
+    background: rgba(255,255,255,0.1); color: var(--text);
+    border: 1px solid var(--glass-border); border-radius: 8px;
+    padding: 10px 18px; font-size: 13px; cursor: pointer;
+    font-family: var(--font-body); transition: background 0.2s;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── GCAL OVERLAY ── */
+  #gcal-embed {
+    display: none;
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.92);
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; padding: 24px;
+  }
+  #gcal-embed.show { display: flex; }
+  #gcal-embed iframe { width: 100%; flex: 1; border: none; border-radius: var(--radius); }
+  #gcal-close {
+    background: var(--accent); color: #1a1200;
+    border: none; border-radius: 8px; padding: 10px 28px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: var(--font-body);
+  }
+
+  /* ── PHOTO CREDIT ── */
+  #photo-credit {
+    position: fixed; bottom: 14px; right: 14px; z-index: 20;
+    font-size: 10px; color: rgba(255,255,255,0.4);
+    font-family: var(--font-body); font-weight: 300;
+    letter-spacing: 0.3px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="bg"></div>
+<button id="settings-btn" onclick="toggleSettings()" title="Settings">⚙️</button>
+<div id="photo-credit"></div>
+
+<div id="dashboard">
+
+  <!-- LEFT COLUMN -->
+  <div id="left-col">
+
+    <div id="clock-block">
+      <div id="clock">12:00<sup id="ampm-sec">00</sup></div>
+      <div id="date-line">Loading…</div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- WEATHER -->
+    <div id="weather-block">
+      <div id="weather-loading">Fetching weather…</div>
+      <div id="weather-main" style="display:none">
+        <div id="weather-icon-main">⛅</div>
+        <div id="weather-temp">--°</div>
+        <div id="weather-info">
+          <div id="weather-feels">Feels like --°</div>
+          <div id="weather-desc">--</div>
+        </div>
+      </div>
+      <div id="forecast-row" style="display:none"></div>
+      <div id="hourly-row" style="display:none"></div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN: CALENDAR -->
+  <div id="right-col">
+    <div id="cal-block">
+      <div id="cal-header">
+        <div id="cal-month">Month YYYY</div>
+        <div id="cal-nav">
+          <button onclick="changeMonth(-1)">‹</button>
+          <button onclick="changeMonth(1)">›</button>
+        </div>
+      </div>
+      <div id="cal-grid"></div>
+      <div id="events-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Settings Panel -->
+<div id="settings-panel">
+  <button id="close-settings" onclick="toggleSettings()">✕</button>
+  <div id="settings-title">Display Settings</div>
+
+  <!-- Photos -->
+  <div class="setting-group">
+    <h3>📸 Background Photos</h3>
+    <div class="setting-row">
+      <label>Add photo URL (direct image link)</label>
+      <input type="url" id="photo-url-input" placeholder="https://…" />
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="addPhotoUrl()">Add Photo</button>
+      <label class="btn-secondary" style="display:inline-flex;align-items:center;cursor:pointer;">
+        Upload from Device
+        <input type="file" accept="image/*" id="photo-file-input" style="display:none" onchange="addPhotoFile(event)" multiple />
+      </label>
+    </div>
+    <div class="photo-thumbs" id="photo-thumbs"></div>
+    <div class="setting-row">
+      <label>Slideshow interval</label>
+      <select id="slide-interval" onchange="updateSlideshowInterval()">
+        <option value="20">20 seconds</option>
+        <option value="30">30 seconds</option>
+        <option value="60" selected>1 minute</option>
+        <option value="300">5 minutes</option>
+        <option value="600">10 minutes</option>
+        <option value="0">Manual only</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="prevPhoto()">⬅ Prev</button>
+      <button class="btn-secondary" onclick="nextPhoto()">Next ➡</button>
+    </div>
+  </div>
+
+  <!-- Weather -->
+  <div class="setting-group">
+    <h3>🌤 Weather</h3>
+    <div class="setting-row">
+      <label>ZIP Code</label>
+      <input type="text" id="zip-input" placeholder="e.g. 08054" maxlength="5" />
+    </div>
+    <div class="setting-row">
+      <label>Temperature Unit</label>
+      <select id="temp-unit" onchange="saveWeatherSettings()">
+        <option value="fahrenheit">Fahrenheit (°F)</option>
+        <option value="celsius">Celsius (°C)</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveWeatherSettings()">Update Weather</button>
+    <p style="font-size:10px;color:var(--text-muted);line-height:1.5;" id="weather-status"></p>
+  </div>
+
+  <!-- Calendar -->
+  <div class="setting-group">
+    <h3>📅 Google Calendar</h3>
+    <div class="setting-row">
+      <label>Google Calendar Embed URL</label>
+      <input type="url" id="gcal-url-input" placeholder="https://calendar.google.com/calendar/embed?src=…" />
+    </div>
+    <div class="setting-row">
+      <label>Google Calendar iCal URL (for event dots)</label>
+      <input type="url" id="gcal-ical-input" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" />
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="saveCalSettings()">Save Calendar</button>
+      <button class="btn-secondary" onclick="openGCalEmbed()">View Full Calendar</button>
+    </div>
+    <p style="font-size:10px;color:var(--text-muted);line-height:1.5;">
+      Google Calendar → Settings → [Your Calendar] → "Integrate calendar" → copy embed URL & iCal URL.
+    </p>
+  </div>
+
+  <!-- Display -->
+  <div class="setting-group">
+    <h3>🖥 Display</h3>
+    <div class="setting-row">
+      <label>Clock format</label>
+      <select id="clock-format">
+        <option value="12">12-hour</option>
+        <option value="24">24-hour</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveDisplaySettings()">Save</button>
+  </div>
+</div>
+
+<!-- Full Calendar Overlay -->
+<div id="gcal-embed">
+  <iframe id="gcal-iframe" src="about:blank" allowfullscreen></iframe>
+  <button id="gcal-close" onclick="closeGCalEmbed()">Close Calendar</button>
+</div>
+
+<script>
+/* ═══ STATE ═══ */
+let state = {
+  photos: [],
+  photoIndex: 0,
+  slideshowInterval: 60,
+  zip: '08054',
+  gcalEmbedUrl: '',
+  gcalIcalUrl: '',
+  clockFormat: '12',
+  tempUnit: 'fahrenheit',
+  weatherData: null,
+  calEvents: [],
+  viewMonth: new Date().getMonth(),
+  viewYear: new Date().getFullYear(),
+};
+
+// Pre-loaded Google Photos from the shared album (extracted from album page)
+const GOOGLE_PHOTOS = [
+  'https://lh3.googleusercontent.com/pw/AP1GczMmuMo-VlOqZN-wEgVF2XhCqZatam8NU8aK6LkURDLfLAPkQyfb0lIcrMFcBtfpC81fKjlB4gUQ_HqsaSZKncMIUlESIRiE5deumBUO4YB8dHilPWrz=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczP2BAG28u6tNyF0jYZffGaHKcXusk7r84ksOKyVZbCzeZcK4F_xZLy01wCl2b-AdYI_UA8YcV6MZYYDOlG9ORQvGVQQXTjLFZaBgy10gdxDalqcNCDH=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczNAqqb2N79_gtKOboCQuTYaeVJhV7fB-Wy5sFkQN_LqbYmZ3C1ke4Wnz-rr6kufknRBa2ZuwzNuBcDRiy2Fb-jPMsoUqtTixgyRJsFEaorgcgWSVy0R=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczN7vVpFagQWACe-36bCZjpk_WZZtThcAlWCdhN3kQ3ePw8zs_a35XtWqPUN3YpISnBZJP6USWRTCUQ_Hetnb4I-_qi238e_9Csqi3tfojBO42ldZN85=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczPzBYvDzPc0KvY8bIviD2fMve5slFn3gh09eivvn6Zp4RSlU1jIdikwaBLVcKeuos25ALP2p_OI0P6OLMGZY5x1OUEEMrG_bZ-BtWa-LBC-sdY_fZZ_=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczNHW7yMxN3YcuDiHknopgPfuI-SDqrjxAJ4ElktXNswqh6dSqTZNHVnPOyClcU4P5C18Rc_Zoflr5-ZZZ_M_qDbcoOF5A2_YrIx78crWT9tdbI2fuaj=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczPGzj3pmxScVig9fsG3_4_gXn2gcOcwwAeBqsEz4j7RIVcydohhisTEk57_PacyZKin4KWr-Y38TTT-SdvOq6iGYYmKlCSbCAZgsPJ0w2ZlkPTLaif8=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczPYU0ygsJLfjHIfK5d_ZyyYS4cc9xK7xZ9NVo33YRdHtEyBGgoFHt51mHV8OLrL2IhNmq3nAZ_nYSfQV1BU9Dn978Hti1PFk2MLvWYLe2y47X9HwION=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczO27dsRabUSkI9ej6KVVRIaFmMidZggATRuVzOixXZzpNWgzK-K07ux9jXova0XNxzxt0dDqtnRhxTkGNNTfOLTah4gNUmmIzKvhGyWvHIXOFaIz_Ye=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczPaUKrFuv71NRfCx-uWqbuK2NB8uFFpRuCTtiLheC7onrGV_aUaAkRngFZBW-6lIINYqpSoJjFq8HvJSE2BOUUoQ5YCC3zOacyPA2GgBGEd84RjLd0N=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczPLi4Jb9xdaiFeMqu11s1Iqfhfd7rWT7xR2AJMB76dHvG7i8Br7mARrVMrdZ-r8hYkNOGMiA0rCy68W3BLUhcO2EIuZB1kztSFY1m_oglnupmbVT0Cn=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczMcdjMKFkHQxs-HJJjZbr0TYrDwuMrOncnv4LTBRmsqtoaPArXSV-ScOBhdg9DAxBgKx94w7SyCqrOcmkVzo7NK6NUwAGQXlLZZxqQ_YQvCGgbF1YTI=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczNiSFP7Y9i83PfdPjzerwnEuVol02JIqvYyB-BHlTD_AOVQ06KO7OaexwrROYVM3Kk10f-csKIAFCXt9raoRGgc2WHFvGurScEO58UjUheplI8wI7MG=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczNFg6L14hXkT8pzuES04x9-6JntL3f5ZrLjem0gNlUWds1uMTtSr6dB7WOSRdkFe0iYN3GSYYjM-tbXNAK01Ju_YGy0agZrUpml-QsrdQ78wuSo5LP2=w1920-h1080-no',
+  'https://lh3.googleusercontent.com/pw/AP1GczMxi7gGhVWO417mFRanH8HcT6aDXmZXVUL-85pKBYViSNBxokqxJnyyk0elzOGJeRh_274SxCWaXQFYsgww4LsIaAlHW6E3pckxIMOc3n9D58jfFHrX=w1920-h1080-no',
+];
+
+let slideshowTimer = null;
+
+/* ─── LOAD / SAVE ─── */
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('smartdash_v2') || '{}');
+    if (saved.photos && saved.photos.length) state.photos = saved.photos;
+    if (saved.slideshowInterval !== undefined) state.slideshowInterval = saved.slideshowInterval;
+    if (saved.zip) state.zip = saved.zip;
+    if (saved.gcalEmbedUrl) state.gcalEmbedUrl = saved.gcalEmbedUrl;
+    if (saved.gcalIcalUrl) state.gcalIcalUrl = saved.gcalIcalUrl;
+    if (saved.clockFormat) state.clockFormat = saved.clockFormat;
+    if (saved.tempUnit) state.tempUnit = saved.tempUnit;
+  } catch(e) {}
+
+  // If no photos saved yet, use the Google Photos album
+  if (!state.photos.length) {
+    state.photos = GOOGLE_PHOTOS.map(src => ({ src, type: 'url' }));
+  }
+}
+
+function saveState() {
+  try {
+    const urlOnly = state.photos.filter(p => p.type === 'url');
+    localStorage.setItem('smartdash_v2', JSON.stringify({
+      photos: urlOnly,
+      slideshowInterval: state.slideshowInterval,
+      zip: state.zip,
+      gcalEmbedUrl: state.gcalEmbedUrl,
+      gcalIcalUrl: state.gcalIcalUrl,
+      clockFormat: state.clockFormat,
+      tempUnit: state.tempUnit,
+    }));
+    // For data URLs, try separately
+    const dataPhotos = state.photos.filter(p => p.type === 'data');
+    if (dataPhotos.length) {
+      try { localStorage.setItem('smartdash_v2_data', JSON.stringify(dataPhotos)); } catch(e) {}
+    }
+  } catch(e) {}
+}
+
+/* ─── CLOCK ─── */
+function updateClock() {
+  const now = new Date();
+  let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+  let suffix = '';
+  if (state.clockFormat === '12') {
+    suffix = h >= 12 ? ' PM' : ' AM';
+    h = h % 12 || 12;
+  }
+  const mStr = String(m).padStart(2, '0');
+  const sStr = String(s).padStart(2, '0');
+  document.getElementById('clock').innerHTML = `${h}:${mStr}<sup>${sStr}${suffix}</sup>`;
+
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('date-line').textContent =
+    `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+}
+
+/* ─── WEATHER ─── */
+const WX_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
+const WX_DESC = {0:'Clear',1:'Mostly Clear',2:'Partly Cloudy',3:'Overcast',45:'Foggy',48:'Foggy',51:'Light Drizzle',53:'Drizzle',55:'Heavy Drizzle',61:'Light Rain',63:'Rain',65:'Heavy Rain',71:'Light Snow',73:'Snow',75:'Heavy Snow',80:'Showers',81:'Heavy Showers',82:'Violent Showers',95:'Thunderstorm',96:'Thunderstorm',99:'Severe Thunderstorm'};
+
+function toTemp(c) {
+  return state.tempUnit === 'fahrenheit' ? Math.round(c * 9/5 + 32) + '°' : Math.round(c) + '°';
+}
+
+// ZIP code to lat/lon lookup using geocode.maps.co (free, no CORS issues)
+async function zipToLatLon(zip) {
+  // Try multiple geocoding services in order
+  const services = [
+    async () => {
+      const r = await fetch(`https://geocode.maps.co/search?q=${zip}&country=US&format=json`);
+      const d = await r.json();
+      if (d && d.length) return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon), city: d[0].display_name.split(',')[0] };
+    },
+    async () => {
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${zip}&country=US&format=json&limit=1`, {headers:{'Accept-Language':'en'}});
+      const d = await r.json();
+      if (d && d.length) return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon), city: d[0].display_name.split(',')[0] };
+    },
+    async () => {
+      // Fallback: use open-meteo's geocoding with a known ZIP mapping for common NJ zips
+      // Mount Laurel NJ 08054
+      const knownZips = {
+        '08054': {lat:39.9526,lon:-74.9071,city:'Mount Laurel'},
+        '21208': {lat:39.3751,lon:-76.7216,city:'Pikesville'},
+        '10001': {lat:40.7484,lon:-73.9967,city:'New York'},
+      };
+      if (knownZips[zip]) return knownZips[zip];
+      throw new Error('No known zip');
+    }
+  ];
+
+  for (const fn of services) {
+    try { const r = await fn(); if (r) return r; } catch(e) {}
+  }
+  throw new Error('Could not geocode ZIP');
+}
+
+async function fetchWeather() {
+  const statusEl = document.getElementById('weather-status');
+  try {
+    const { lat, lon, city } = await zipToLatLon(state.zip);
+    if (statusEl) statusEl.textContent = `Using: ${city} (${lat.toFixed(3)}, ${lon.toFixed(3)})`;
+
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&current=temperature_2m,apparent_temperature,weathercode,windspeed_10m` +
+      `&hourly=temperature_2m,weathercode,precipitation_probability` +
+      `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
+      `&temperature_unit=celsius&wind_speed_unit=mph&timezone=auto&forecast_days=7`;
+
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('Open-Meteo error');
+    const wx = await r.json();
+
+    state.weatherData = { wx, city, lat, lon };
+    renderWeather();
+  } catch(e) {
+    document.getElementById('weather-loading').textContent = `Weather unavailable. Check ZIP in settings. (${e.message})`;
+    if (statusEl) statusEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+function renderWeather() {
+  const { wx, city } = state.weatherData;
+  const cur = wx.current;
+  const daily = wx.daily;
+  const hourly = wx.hourly;
+  const now = new Date();
+
+  document.getElementById('weather-loading').style.display = 'none';
+  document.getElementById('weather-main').style.display = 'flex';
+
+  document.getElementById('weather-icon-main').textContent = WX_ICONS[cur.weathercode] || '🌡️';
+  document.getElementById('weather-temp').textContent = toTemp(cur.temperature_2m);
+  document.getElementById('weather-feels').textContent = `Feels like ${toTemp(cur.apparent_temperature)}`;
+  document.getElementById('weather-desc').textContent = (WX_DESC[cur.weathercode] || '') + ` · ${city}`;
+
+  // Daily
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const forecastRow = document.getElementById('forecast-row');
+  forecastRow.innerHTML = '';
+  forecastRow.style.display = 'flex';
+  daily.time.slice(0, 7).forEach((dateStr, i) => {
+    const d = new Date(dateStr + 'T12:00:00');
+    const label = i === 0 ? 'Today' : dayNames[d.getDay()];
+    const el = document.createElement('div');
+    el.className = 'forecast-day';
+    el.innerHTML = `
+      <span class="day-label">${label}</span>
+      <span class="day-icon">${WX_ICONS[daily.weathercode[i]] || '🌡️'}</span>
+      <span class="day-rain">💧${daily.precipitation_probability_max[i]}%</span>
+      <span class="day-hi">${toTemp(daily.temperature_2m_max[i])}</span>
+      <span class="day-lo">${toTemp(daily.temperature_2m_min[i])}</span>
+    `;
+    forecastRow.appendChild(el);
+  });
+
+  // Hourly (next 12 hours)
+  const hourlyRow = document.getElementById('hourly-row');
+  hourlyRow.innerHTML = '';
+  hourlyRow.style.display = 'flex';
+  let shown = 0;
+  hourly.time.forEach((t, i) => {
+    if (shown >= 12) return;
+    const d = new Date(t);
+    if (d <= now) return;
+    shown++;
+    const h = d.getHours();
+    const label = h === 0 ? '12am' : h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h-12}pm`;
+    const el = document.createElement('div');
+    el.className = 'hourly-item';
+    el.innerHTML = `
+      <span style="font-size:9px;color:var(--text-muted)">${label}</span>
+      <span class="h-icon">${WX_ICONS[hourly.weathercode[i]] || '🌡️'}</span>
+      <span class="h-temp">${toTemp(hourly.temperature_2m[i])}</span>
+    `;
+    hourlyRow.appendChild(el);
+  });
+}
+
+/* ─── CALENDAR ─── */
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOWS = ['S','M','T','W','T','F','S'];
+
+function renderCalendar() {
+  const today = new Date();
+  const vm = state.viewMonth, vy = state.viewYear;
+  document.getElementById('cal-month').textContent = `${MONTHS[vm]} ${vy}`;
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  DOWS.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow'; el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const firstDay = new Date(vy, vm, 1).getDay();
+  const daysInMonth = new Date(vy, vm+1, 0).getDate();
+  const daysInPrev = new Date(vy, vm, 0).getDate();
+
+  const eventDays = new Set(state.calEvents
+    .filter(e => { const d = new Date(e.date); return d.getMonth() === vm && d.getFullYear() === vy; })
+    .map(e => new Date(e.date).getDate())
+  );
+
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day other-month';
+    el.textContent = daysInPrev - firstDay + i + 1;
+    grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+    if (d === today.getDate() && vm === today.getMonth() && vy === today.getFullYear())
+      el.classList.add('today');
+    if (eventDays.has(d)) el.classList.add('has-event');
+    el.textContent = d;
+    grid.appendChild(el);
+  }
+
+  const total = firstDay + daysInMonth;
+  const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let d = 1; d <= remaining; d++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day other-month'; el.textContent = d;
+    grid.appendChild(el);
+  }
+
+  renderEvents();
+}
+
+function renderEvents() {
+  const list = document.getElementById('events-list');
+  list.innerHTML = '';
+  const now = new Date();
+  const upcoming = state.calEvents
+    .filter(e => new Date(e.date) >= now)
+    .sort((a,b) => new Date(a.date) - new Date(b.date))
+    .slice(0, 4);
+  if (!upcoming.length) return;
+
+  const label = document.createElement('div');
+  label.id = 'events-label'; label.textContent = 'Upcoming';
+  list.appendChild(label);
+
+  upcoming.forEach(e => {
+    const d = new Date(e.date);
+    const dateLabel = d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+    const el = document.createElement('div');
+    el.className = 'event-item';
+    el.innerHTML = `
+      <div class="event-dot" style="background:${e.color||'#7ab8f0'}"></div>
+      <div class="event-title">${e.title}</div>
+      <div class="event-time">${dateLabel}</div>
+    `;
+    list.appendChild(el);
+  });
+}
+
+function changeMonth(dir) {
+  state.viewMonth += dir;
+  if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
+  if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear--; }
+  renderCalendar();
+}
+
+/* ─── PHOTOS ─── */
+function setBackground(src) {
+  const bg = document.getElementById('bg');
+  bg.classList.add('fade');
+  setTimeout(() => {
+    bg.style.backgroundImage = `url('${src}')`;
+    bg.classList.remove('fade');
+  }, 700);
+}
+
+function showPhoto(index) {
+  if (!state.photos.length) return;
+  state.photoIndex = ((index % state.photos.length) + state.photos.length) % state.photos.length;
+  setBackground(state.photos[state.photoIndex].src);
+  renderPhotoThumbs();
+}
+
+function nextPhoto() { showPhoto(state.photoIndex + 1); }
+function prevPhoto() { showPhoto(state.photoIndex - 1); }
+
+function startSlideshow() {
+  if (slideshowTimer) clearInterval(slideshowTimer);
+  if (state.slideshowInterval > 0 && state.photos.length > 1)
+    slideshowTimer = setInterval(nextPhoto, state.slideshowInterval * 1000);
+}
+
+function addPhotoUrl() {
+  const url = document.getElementById('photo-url-input').value.trim();
+  if (!url) return;
+  state.photos.push({ src: url, type: 'url' });
+  document.getElementById('photo-url-input').value = '';
+  saveState(); renderPhotoThumbs();
+  if (state.photos.length === 1) showPhoto(0);
+  startSlideshow();
+}
+
+function addPhotoFile(event) {
+  Array.from(event.target.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      state.photos.push({ src: e.target.result, type: 'data' });
+      saveState(); renderPhotoThumbs();
+      if (state.photos.length === 1) showPhoto(0);
+      startSlideshow();
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = '';
+}
+
+function removePhoto(index) {
+  state.photos.splice(index, 1);
+  if (state.photoIndex >= state.photos.length) state.photoIndex = 0;
+  saveState(); renderPhotoThumbs();
+  if (state.photos.length > 0) showPhoto(state.photoIndex);
+  else document.getElementById('bg').style.backgroundImage = '';
+  startSlideshow();
+}
+
+function renderPhotoThumbs() {
+  const container = document.getElementById('photo-thumbs');
+  container.innerHTML = '';
+  state.photos.forEach((p, i) => {
+    const wrap = document.createElement('div');
+    wrap.style.position = 'relative';
+    const img = document.createElement('img');
+    img.src = p.src; img.className = 'photo-thumb';
+    if (i === state.photoIndex) img.classList.add('active');
+    img.onclick = () => showPhoto(i);
+    img.onerror = () => { img.style.background='#333'; img.src='data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=='; };
+    const del = document.createElement('button');
+    del.textContent = '×';
+    del.style.cssText = 'position:absolute;top:0;right:0;background:rgba(0,0,0,0.75);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;line-height:1;padding:0;';
+    del.onclick = () => removePhoto(i);
+    wrap.appendChild(img); wrap.appendChild(del);
+    container.appendChild(wrap);
+  });
+}
+
+function updateSlideshowInterval() {
+  state.slideshowInterval = parseInt(document.getElementById('slide-interval').value);
+  saveState(); startSlideshow();
+}
+
+/* ─── SETTINGS ─── */
+function toggleSettings() {
+  const panel = document.getElementById('settings-panel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) populateSettings();
+}
+
+function populateSettings() {
+  document.getElementById('zip-input').value = state.zip;
+  document.getElementById('gcal-url-input').value = state.gcalEmbedUrl;
+  document.getElementById('gcal-ical-input').value = state.gcalIcalUrl;
+  document.getElementById('clock-format').value = state.clockFormat;
+  document.getElementById('temp-unit').value = state.tempUnit;
+  document.getElementById('slide-interval').value = state.slideshowInterval;
+  renderPhotoThumbs();
+}
+
+function saveWeatherSettings() {
+  const z = document.getElementById('zip-input').value.trim();
+  if (z) state.zip = z;
+  state.tempUnit = document.getElementById('temp-unit').value;
+  saveState();
+  document.getElementById('weather-loading').style.display = 'block';
+  document.getElementById('weather-main').style.display = 'none';
+  document.getElementById('forecast-row').style.display = 'none';
+  document.getElementById('hourly-row').style.display = 'none';
+  document.getElementById('weather-loading').textContent = 'Fetching weather…';
+  fetchWeather();
+}
+
+function saveCalSettings() {
+  state.gcalEmbedUrl = document.getElementById('gcal-url-input').value.trim();
+  state.gcalIcalUrl = document.getElementById('gcal-ical-input').value.trim();
+  saveState();
+  if (state.gcalIcalUrl) fetchIcal();
+}
+
+function saveDisplaySettings() {
+  state.clockFormat = document.getElementById('clock-format').value;
+  saveState(); updateClock();
+}
+
+/* ─── GCAL ─── */
+function openGCalEmbed() {
+  if (!state.gcalEmbedUrl) { alert('Please enter your Google Calendar embed URL in settings first.'); return; }
+  document.getElementById('gcal-iframe').src = state.gcalEmbedUrl;
+  document.getElementById('gcal-embed').classList.add('show');
+}
+function closeGCalEmbed() {
+  document.getElementById('gcal-embed').classList.remove('show');
+  document.getElementById('gcal-iframe').src = 'about:blank';
+}
+
+/* ─── iCAL ─── */
+async function fetchIcal() {
+  if (!state.gcalIcalUrl) return;
+  try {
+    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(state.gcalIcalUrl)}`;
+    const res = await fetch(proxy);
+    const text = await res.text();
+    state.calEvents = parseIcal(text);
+    renderCalendar();
+  } catch(e) { console.warn('iCal fetch failed:', e); }
+}
+
+function parseIcal(text) {
+  const events = [];
+  const lines = text.replace(/\r\n /g, '').replace(/\r/g, '').split('\n');
+  let inEvent = false, cur = {};
+  const COLORS = ['#7ab8f0','#f07a7a','#7af0a0','#f0c97a','#b87af0','#f07ab8'];
+  let ci = 0;
+  lines.forEach(line => {
+    if (line === 'BEGIN:VEVENT') { inEvent = true; cur = {}; }
+    else if (line === 'END:VEVENT') {
+      if (cur.title && cur.date) events.push({ ...cur, color: COLORS[ci++ % COLORS.length] });
+      inEvent = false;
+    } else if (inEvent) {
+      if (line.startsWith('SUMMARY:')) cur.title = line.slice(8);
+      else if (line.startsWith('DTSTART')) {
+        const val = line.split(':').pop();
+        if (val.length >= 8) {
+          cur.date = new Date(`${val.slice(0,4)}-${val.slice(4,6)}-${val.slice(6,8)}T00:00:00`);
+        }
+      }
+    }
+  });
+  return events;
+}
+
+/* ─── KEYBOARD ─── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') nextPhoto();
+  if (e.key === 'ArrowLeft') prevPhoto();
+  if (e.key === 'Escape') { document.getElementById('settings-panel').classList.remove('open'); closeGCalEmbed(); }
+  if (e.key === 's' || e.key === 'S') toggleSettings();
+});
+
+/* ─── INIT ─── */
+function init() {
+  loadState();
+  updateClock();
+  setInterval(updateClock, 1000);
+  fetchWeather();
+  setInterval(fetchWeather, 10 * 60 * 1000);
+  state.viewMonth = new Date().getMonth();
+  state.viewYear = new Date().getFullYear();
+  renderCalendar();
+  if (state.photos.length) showPhoto(state.photoIndex);
+  startSlideshow();
+  if (state.gcalIcalUrl) fetchIcal();
+}
+
+init();
+</script>
+</body>
+</html>
