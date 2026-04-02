@@ -34,10 +34,16 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   transition: opacity 1.4s ease;
 }
 #bg::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(to right, rgba(4,12,24,0.28) 0%, rgba(4,12,24,0.04) 38%, rgba(4,12,24,0.45) 100%);
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(4,12,24,0.15) 0%,
+    rgba(4,12,24,0.03) 40%,
+    rgba(4,12,24,0.18) 100%
+  );
 }
-#bg.fade { opacity: 0; }
 
 /* ── MAIN: left widgets (35%) | right calendar (65%) ── */
 #app {
