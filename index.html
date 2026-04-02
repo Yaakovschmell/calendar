@@ -9,11 +9,11 @@
 <style>
 :root {
   --glass-widget: rgba(6,14,26,0.25);
-  --glass-cal: rgba(5,12,22,0.45);
+  --glass-cal: rgba(5,12,22,0.65);
   --border: rgba(255,255,255,0.13);
   --border-cal: rgba(255,255,255,0.09);
   --text: #ffffff;
-  --text-dim: rgba(255,255,255,0.85);
+  --text-dim: rgba(255,255,255,0.95);
   --text-muted: rgba(255,255,255,0.5);
   --accent: #e8c97a;
   --good: #7adba0;
@@ -87,10 +87,11 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 }
 
 .wcard {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.18);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.12);
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .wlabel {
   font-size: 9px; font-weight: 500; letter-spacing: 3px;
@@ -208,8 +209,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   padding-bottom: 6px; display: flex; align-items: center; justify-content: center;
 }
 .cal-day {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid transparent;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 10px;
   padding: 8px 8px 5px;
   display: flex; flex-direction: column;
