@@ -573,8 +573,12 @@ function loadFishingWeather(){
 
 function applySettings(){
   document.documentElement.style.setProperty('--accent',CFG.accentColor);
-  const bgEl=document.getElementById('bg');bgEl.classList.add('fade');
-  setTimeout(()=>{bgEl.style.backgroundImage=`url('${CFG.bg||DEFAULT_BG}')`;bgEl.classList.remove('fade');},700);
+
+  const bgEl = document.getElementById('bg');
+
+  // 🔥 FORCE background — ignore saved value
+  bgEl.style.backgroundImage = `url('${DEFAULT_BG}')`;
+
   document.getElementById('weather-loc-label').textContent=`📍 ${CFG.city}`;
   document.getElementById('fish-location-display').textContent=CFG.fishName;
   document.getElementById('tide-loc-label').textContent=`🌊 Tides — ${CFG.fishName.split(',')[0]}`;
