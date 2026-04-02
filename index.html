@@ -30,7 +30,6 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--font-sans); color: var(--text); }
 
-/* BACKGROUND */
 #bg {
   position: fixed; inset: 0; z-index: 0;
   background: url('https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=2400&q=90') center/cover no-repeat;
@@ -53,7 +52,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   overflow: hidden;
 }
 
-/* BASE PANEL — transparent */
 .panel {
   background: var(--glass);
   border: 1px solid var(--border);
@@ -62,8 +60,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   border-radius: var(--radius);
   box-shadow: var(--shadow-panel);
 }
-
-/* CALENDAR PANEL — solid dark */
 .panel-cal {
   background: var(--glass-cal);
   border: 1px solid var(--border-cal);
@@ -73,9 +69,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   box-shadow: 0 12px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
-/* ── LEFT COLUMN ── */
+/* ── LEFT ── */
 #col-left { display: flex; flex-direction: column; gap: 12px; }
-
 #clock-block { padding: 22px 24px 18px; }
 #clock-time {
   font-family: var(--font-serif);
@@ -123,25 +118,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   text-shadow: 0 1px 8px rgba(0,0,0,0.8);
 }
 #weather-main { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-#weather-icon {
-  font-size: 40px;
-  line-height: 1;
-  filter: drop-shadow(0 0 12px rgba(240,201,122,0.5));
-}
-#weather-temp {
-  font-family: var(--font-serif);
-  font-size: 50px;
-  font-weight: 300;
-  line-height: 1;
-  text-shadow: var(--shadow-text);
-}
-#weather-desc {
-  font-size: 12px;
-  color: var(--text-dim);
-  font-style: italic;
-  line-height: 1.5;
-  text-shadow: var(--shadow-text);
-}
+#weather-icon { font-size: 40px; line-height: 1; filter: drop-shadow(0 0 12px rgba(240,201,122,0.5)); }
+#weather-temp { font-family: var(--font-serif); font-size: 50px; font-weight: 300; line-height: 1; text-shadow: var(--shadow-text); }
+#weather-desc { font-size: 12px; color: var(--text-dim); font-style: italic; line-height: 1.5; text-shadow: var(--shadow-text); }
 #weather-feels { font-size: 11px; color: var(--text-muted); margin-top: 1px; text-shadow: var(--shadow-text); }
 
 .w-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; }
@@ -163,10 +142,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   border-radius: 10px;
   padding: 6px 2px;
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
 }
 .fc-name { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
 .fc-icon { font-size: 16px; }
@@ -185,9 +161,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 .sun-label { font-size: 9px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
 .sun-value { font-family: var(--font-serif); font-size: 12px; color: var(--text); margin-top: 2px; text-shadow: var(--shadow-text); }
 
-/* ── CENTER COLUMN ── */
+/* ── CENTER ── */
 #col-center { display: flex; flex-direction: column; gap: 12px; }
-
 #cal-block { flex: 1; padding: 18px 18px 14px; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 #cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-shrink: 0; }
 #cal-month { font-family: var(--font-serif); font-size: 26px; color: var(--text); font-weight: 400; letter-spacing: 0.5px; }
@@ -206,25 +181,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 }
 #cal-nav button:hover { background: rgba(232,201,122,0.2); }
 #cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; flex: 1; min-height: 0; }
-.cal-dow {
-  text-align: center;
-  font-size: 9px;
-  font-weight: 500;
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  padding-bottom: 5px;
-}
+.cal-dow { text-align: center; font-size: 9px; font-weight: 500; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; padding-bottom: 5px; }
 .cal-day {
   background: rgba(255,255,255,0.04);
   border: 1px solid transparent;
   border-radius: 9px;
   padding: 4px 3px 3px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: background 0.15s;
-  min-height: 0;
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: background 0.15s; min-height: 0;
 }
 .cal-day:hover { background: rgba(255,255,255,0.09); }
 .cal-day-num { font-family: var(--font-serif); font-size: 13px; color: var(--text-dim); line-height: 1; flex-shrink: 0; }
@@ -233,16 +197,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 .cal-day.other-month .cal-day-num { opacity: 0.2; }
 .cal-events { margin-top: 2px; display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
 .cal-event {
-  font-size: 8px;
-  font-weight: 500;
-  background: var(--accent);
-  color: #1a1000;
-  border-radius: 3px;
-  padding: 1px 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.5;
+  font-size: 8px; font-weight: 500;
+  background: var(--accent); color: #1a1000;
+  border-radius: 3px; padding: 1px 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.5;
 }
 .cal-event.multiday { background: rgba(122,184,240,0.7); color: #fff; }
 .cal-more { font-size: 8px; color: var(--text-muted); padding: 0 2px; }
@@ -250,9 +208,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 #upcoming-block { padding: 13px 16px; flex-shrink: 0; }
 #upcoming-list { display: flex; flex-direction: column; gap: 5px; margin-top: 7px; }
 .upcoming-item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
+  display: flex; align-items: center; gap: 9px;
   padding: 7px 10px;
   background: rgba(0,0,0,0.25);
   border-radius: 9px;
@@ -262,18 +218,78 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 .upcoming-date { font-family: var(--font-serif); font-size: 11px; color: var(--accent); white-space: nowrap; min-width: 92px; text-shadow: var(--shadow-text); }
 .upcoming-title { font-size: 12px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 300; text-shadow: var(--shadow-text); }
 
-/* ── RIGHT COLUMN ── */
+/* ── RIGHT ── */
 #col-right { display: flex; flex-direction: column; gap: 12px; }
 
+/* ── FISHING PANEL ── */
 #fish-block { padding: 16px 18px; }
-#fish-header { display: flex; align-items: center; gap: 12px; margin: 8px 0 12px; }
-#fish-score {
-  font-family: var(--font-serif);
-  font-size: 62px;
-  font-weight: 600;
-  line-height: 1;
-  text-shadow: var(--shadow-text);
+.fish-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
 }
+#fish-loc-label {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 3.5px;
+  color: var(--accent);
+  text-transform: uppercase;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.8);
+  flex: 1;
+}
+/* Live refresh badge */
+#fish-live-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(122,219,160,0.13);
+  border: 1px solid rgba(122,219,160,0.3);
+  border-radius: 20px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+#fish-live-badge:hover { background: rgba(122,219,160,0.25); }
+.live-dot {
+  width: 6px; height: 6px;
+  background: var(--good);
+  border-radius: 50%;
+  animation: livepulse 1.8s infinite;
+}
+@keyframes livepulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+#fish-refresh-text { font-size: 9px; color: var(--good); letter-spacing: 1px; font-weight: 500; }
+.fish-loc-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+#fish-location-display {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 300;
+  font-style: italic;
+}
+#fish-change-btn {
+  background: rgba(232,201,122,0.12);
+  border: 1px solid rgba(232,201,122,0.3);
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 9px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 2px 7px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.2s;
+}
+#fish-change-btn:hover { background: rgba(232,201,122,0.25); }
+
+#fish-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+#fish-score { font-family: var(--font-serif); font-size: 62px; font-weight: 600; line-height: 1; text-shadow: var(--shadow-text); }
 #fish-score-sub { font-size: 11px; color: var(--text-muted); font-weight: 300; }
 #fish-score-label { font-size: 12px; color: var(--text-dim); margin-top: 3px; font-weight: 300; font-style: italic; text-shadow: var(--shadow-text); }
 
@@ -293,13 +309,76 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   font-weight: 300;
   text-shadow: var(--shadow-text);
 }
+#fish-last-update {
+  margin-top: 6px;
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 300;
+}
 
+/* ── LOCATION CHANGE POPUP ── */
+#loc-popup {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(4,10,20,0.85);
+  backdrop-filter: blur(20px);
+  align-items: center;
+  justify-content: center;
+}
+#loc-popup.open { display: flex; }
+.loc-card {
+  background: rgba(8,20,38,0.95);
+  border: 1px solid var(--border-cal);
+  border-radius: 20px;
+  padding: 32px 36px;
+  width: 420px;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.7);
+}
+.loc-title { font-family: var(--font-serif); font-size: 26px; color: var(--text); margin-bottom: 4px; font-weight: 300; }
+.loc-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 24px; font-weight: 300; }
+.loc-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.loc-field label { font-size: 11px; color: var(--text-muted); font-weight: 300; letter-spacing: 1px; text-transform: uppercase; }
+.loc-field input {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.loc-field input:focus { border-color: var(--accent); }
+.loc-note { font-size: 10px; color: var(--text-muted); font-style: italic; margin-top: 2px; line-height: 1.5; }
+.loc-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+.loc-preset {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: all 0.2s;
+}
+.loc-preset:hover { background: rgba(232,201,122,0.2); border-color: var(--accent); color: var(--accent); }
+.loc-actions { display: flex; gap: 8px; margin-top: 20px; }
+.btn { padding: 10px 22px; border-radius: 9px; border: none; font-family: var(--font-sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: var(--accent); color: #1a1000; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-secondary { background: rgba(255,255,255,0.07); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: rgba(255,255,255,0.13); }
+
+/* ── TIDE & SOLAR ── */
 #tide-block { padding: 14px 16px; }
 #tide-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .tide-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
   padding: 7px 10px;
   background: rgba(0,0,0,0.22);
   border-radius: 9px;
@@ -313,17 +392,11 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 
 #solar-block { padding: 14px 16px; flex: 1; }
 #solar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
-.solar-item {
-  background: rgba(0,0,0,0.22);
-  border-radius: 9px;
-  padding: 9px 10px;
-  text-align: center;
-  backdrop-filter: blur(4px);
-}
+.solar-item { background: rgba(0,0,0,0.22); border-radius: 9px; padding: 9px 10px; text-align: center; backdrop-filter: blur(4px); }
 .solar-label { font-size: 9px; color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase; font-weight: 400; }
 .solar-value { font-family: var(--font-serif); font-size: 15px; color: var(--text); margin-top: 3px; text-shadow: var(--shadow-text); }
 
-/* SETTINGS */
+/* ── SETTINGS ── */
 #settings-btn {
   position: fixed; top: 14px; right: 14px; z-index: 100;
   background: rgba(0,0,0,0.35);
@@ -339,7 +412,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   box-shadow: 0 2px 12px rgba(0,0,0,0.4);
 }
 #settings-btn:hover { background: rgba(232,201,122,0.2); }
-
 #settings-panel {
   display: none; position: fixed; inset: 0; z-index: 500;
   background: rgba(4,10,20,0.95);
@@ -351,12 +423,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 .s-title { font-family: var(--font-serif); font-size: 32px; color: var(--text); margin-bottom: 4px; font-weight: 300; letter-spacing: 1px; }
 .s-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 30px; font-weight: 300; }
 .s-section { margin-bottom: 26px; }
-.s-section-title {
-  font-size: 9px; font-weight: 500; letter-spacing: 3.5px;
-  color: var(--accent); text-transform: uppercase;
-  margin-bottom: 12px; padding-bottom: 5px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
+.s-section-title { font-size: 9px; font-weight: 500; letter-spacing: 3.5px; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.08); }
 .s-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
 .s-field { display: flex; flex-direction: column; gap: 5px; }
 .s-field.full { grid-column: 1/-1; }
@@ -376,11 +443,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 .s-field select option { background: #060e1a; }
 .s-note { font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 3px; line-height: 1.55; font-weight: 300; }
 .s-actions { display: flex; gap: 10px; margin-top: 26px; flex-wrap: wrap; }
-.btn { padding: 10px 22px; border-radius: 9px; border: none; font-family: var(--font-sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-.btn-primary { background: var(--accent); color: #1a1000; }
-.btn-primary:hover { opacity: 0.85; }
-.btn-secondary { background: rgba(255,255,255,0.07); color: var(--text); border: 1px solid var(--border); }
-.btn-secondary:hover { background: rgba(255,255,255,0.13); }
 .color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .color-swatch { width: 33px; height: 33px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
 .color-swatch.active { border-color: #fff; transform: scale(1.12); }
@@ -388,7 +450,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 
 .loading { opacity: 0.35; animation: pulse 1.8s infinite; }
 @keyframes pulse { 0%,100%{opacity:0.35} 50%{opacity:0.62} }
-
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
 </style>
@@ -406,7 +467,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
       </div>
       <div id="clock-date">Loading…</div>
     </div>
-
     <div class="panel" id="weather-block">
       <div class="section-label" id="weather-loc-label">📍 Owings Mills, MD</div>
       <div id="weather-main">
@@ -447,7 +507,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
       </div>
       <div id="cal-grid"></div>
     </div>
-
     <div class="panel" id="upcoming-block">
       <div class="section-label">📅 Upcoming Events</div>
       <div id="upcoming-list"><div class="loading" style="font-size:12px;color:var(--text-muted);padding:4px 0">Syncing calendar…</div></div>
@@ -457,7 +516,17 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   <!-- RIGHT -->
   <div id="col-right">
     <div class="panel" id="fish-block">
-      <div class="section-label" id="fish-loc-label">🎣 Fishing — Middle River, MD</div>
+      <div class="fish-header-row">
+        <div id="fish-loc-label">🎣 Fishing Conditions</div>
+        <div id="fish-live-badge" onclick="refreshFishingNow()" title="Click to refresh now">
+          <div class="live-dot"></div>
+          <span id="fish-refresh-text">LIVE</span>
+        </div>
+      </div>
+      <div class="fish-loc-row">
+        <div id="fish-location-display">Dundee Creek, MD</div>
+        <button id="fish-change-btn" onclick="openLocPopup()">Change</button>
+      </div>
       <div id="fish-header">
         <div id="fish-score" class="loading">--</div>
         <div>
@@ -470,10 +539,11 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
       <div class="bar-row"><div class="bar-labels"><span>Pressure</span><span id="fb-pres-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-pres" style="width:0%"></div></div></div>
       <div class="bar-row"><div class="bar-labels"><span>Cloud Cover</span><span id="fb-cloud-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-cloud" style="width:0%"></div></div></div>
       <div id="fish-tip">Loading fishing conditions…</div>
+      <div id="fish-last-update"></div>
     </div>
 
     <div class="panel" id="tide-block">
-      <div class="section-label" id="tide-loc-label">🌊 Tides — Middle River</div>
+      <div class="section-label" id="tide-loc-label">🌊 Tides — Dundee Creek</div>
       <div id="tide-list"><div class="loading" style="font-size:12px;color:var(--text-muted)">Loading…</div></div>
     </div>
 
@@ -489,54 +559,84 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   </div>
 </div>
 
+<!-- LOCATION CHANGE POPUP -->
+<div id="loc-popup">
+  <div class="loc-card">
+    <div class="loc-title">Change Fishing Location</div>
+    <div class="loc-subtitle">Pick a preset or enter custom coordinates.</div>
+
+    <div style="margin-bottom:12px;">
+      <div style="font-size:9px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Quick Picks — Maryland</div>
+      <div class="loc-presets" id="loc-presets"></div>
+    </div>
+
+    <div class="loc-field">
+      <label>Location Name</label>
+      <input id="lp-name" placeholder="e.g. Dundee Creek, MD">
+    </div>
+    <div style="display:flex;gap:10px">
+      <div class="loc-field" style="flex:1">
+        <label>Latitude</label>
+        <input id="lp-lat" placeholder="39.3220">
+      </div>
+      <div class="loc-field" style="flex:1">
+        <label>Longitude</label>
+        <input id="lp-lon" placeholder="-76.3800">
+      </div>
+    </div>
+    <div class="loc-field">
+      <label>NOAA Tide Station ID</label>
+      <input id="lp-tide" placeholder="8574680">
+      <div class="loc-note">Find yours at <strong>tidesandcurrents.noaa.gov</strong> — search near your spot</div>
+    </div>
+    <div class="loc-actions">
+      <button class="btn btn-primary" onclick="saveLocPopup()">Save & Apply</button>
+      <button class="btn btn-secondary" onclick="closeLocPopup()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- SETTINGS -->
 <div id="settings-panel">
   <div class="s-inner">
     <div class="s-title">Dashboard Settings</div>
-    <div class="s-subtitle">Press S to toggle this panel at any time.</div>
-
+    <div class="s-subtitle">Press S to toggle · Esc to close</div>
     <div class="s-section">
-      <div class="s-section-title">📍 Locations</div>
+      <div class="s-section-title">📍 Weather Location</div>
       <div class="s-grid">
-        <div class="s-field"><label>Weather City Label</label><input id="s-city" placeholder="Owings Mills, MD"></div>
-        <div class="s-field"><label>Weather Lat / Lon</label><div style="display:flex;gap:5px"><input id="s-lat" placeholder="39.4143" style="flex:1"><input id="s-lon" placeholder="-76.7791" style="flex:1"></div></div>
-        <div class="s-field"><label>Fishing Location Name</label><input id="s-fish-name" placeholder="Middle River, MD"></div>
-        <div class="s-field"><label>NOAA Tide Station ID</label><input id="s-tide-station" placeholder="8574680"><div class="s-note">Find yours at tidesandcurrents.noaa.gov</div></div>
+        <div class="s-field"><label>City Label</label><input id="s-city" placeholder="Owings Mills, MD"></div>
+        <div class="s-field"><label>Lat / Lon</label><div style="display:flex;gap:5px"><input id="s-lat" placeholder="39.4143" style="flex:1"><input id="s-lon" placeholder="-76.7791" style="flex:1"></div></div>
       </div>
     </div>
-
     <div class="s-section">
-      <div class="s-section-title">📅 Google Calendar iCal Sync</div>
+      <div class="s-section-title">📅 Google Calendar</div>
       <div class="s-grid">
         <div class="s-field full">
           <label>iCal URL</label>
           <input id="s-ical-url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics">
-          <div class="s-note">Google Calendar → Settings → your calendar → "Secret address in iCal format". The dashboard tries multiple CORS proxies automatically. Syncs every 60 seconds.</div>
+          <div class="s-note">Google Calendar → Settings → your calendar → "Secret address in iCal format"</div>
         </div>
       </div>
     </div>
-
     <div class="s-section">
-      <div class="s-section-title">🖼 Background Photo</div>
+      <div class="s-section-title">🖼 Background</div>
       <div class="s-grid">
-        <div class="s-field full"><label>Background Image URL (leave blank for default ocean photo)</label><input id="s-bg" placeholder="https://…"></div>
+        <div class="s-field full"><label>Image URL (blank = default)</label><input id="s-bg" placeholder="https://…"></div>
       </div>
     </div>
-
     <div class="s-section">
       <div class="s-section-title">🎨 Accent Color</div>
       <div class="color-row" id="color-row">
-        <div class="color-swatch active" data-color="#e8c97a" style="background:#e8c97a" title="Golden"></div>
-        <div class="color-swatch" data-color="#7ab8f0" style="background:#7ab8f0" title="Ocean Blue"></div>
-        <div class="color-swatch" data-color="#7adba0" style="background:#7adba0" title="Sea Green"></div>
-        <div class="color-swatch" data-color="#f07a7a" style="background:#f07a7a" title="Sunset Red"></div>
-        <div class="color-swatch" data-color="#b87af0" style="background:#b87af0" title="Dusk Purple"></div>
-        <div class="color-swatch" data-color="#7af0e8" style="background:#7af0e8" title="Teal"></div>
-        <div class="color-swatch" data-color="#f0a07a" style="background:#f0a07a" title="Ember"></div>
-        <div class="color-swatch" data-color="#c8d0e0" style="background:#c8d0e0" title="Silver"></div>
+        <div class="color-swatch active" data-color="#e8c97a" style="background:#e8c97a"></div>
+        <div class="color-swatch" data-color="#7ab8f0" style="background:#7ab8f0"></div>
+        <div class="color-swatch" data-color="#7adba0" style="background:#7adba0"></div>
+        <div class="color-swatch" data-color="#f07a7a" style="background:#f07a7a"></div>
+        <div class="color-swatch" data-color="#b87af0" style="background:#b87af0"></div>
+        <div class="color-swatch" data-color="#7af0e8" style="background:#7af0e8"></div>
+        <div class="color-swatch" data-color="#f0a07a" style="background:#f0a07a"></div>
+        <div class="color-swatch" data-color="#c8d0e0" style="background:#c8d0e0"></div>
       </div>
     </div>
-
     <div class="s-section">
       <div class="s-section-title">🕐 Display</div>
       <div class="s-grid">
@@ -544,47 +644,111 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
         <div class="s-field"><label>Temperature Unit</label><select id="s-tempunit"><option value="F">Fahrenheit (°F)</option><option value="C">Celsius (°C)</option></select></div>
       </div>
     </div>
-
     <div class="s-actions">
       <button class="btn btn-primary" onclick="saveSettings()">Save & Apply</button>
       <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
       <button class="btn btn-secondary" onclick="resetSettings()">Reset Defaults</button>
     </div>
-    <div class="s-hotkey">Tip: Press S to open / close settings · Esc to close</div>
+    <div class="s-hotkey">S = open/close · Esc = close</div>
   </div>
 </div>
 
 <script>
-// ── CONFIG ──────────────────────────────────────────────────────────────────
+// ── CONSTANTS ────────────────────────────────────────────────────────────────
 const DEFAULT_BG = 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=2400&q=90';
 const DEFAULT_ICAL = 'https://calendar.google.com/calendar/ical/aaronspero1%40gmail.com/private-fcf40194d406df57c8aaba1dbef1c70c/basic.ics';
-
-const DEFAULTS = {
-  city: 'Owings Mills, MD',
-  lat: 39.4143,
-  lon: -76.7791,
-  fishName: 'Middle River, MD',
-  tideStation: '8574680',
-  icalUrl: DEFAULT_ICAL,
-  bg: DEFAULT_BG,
-  accentColor: '#e8c97a',
-  timeFmt: '12',
-  tempUnit: 'F',
-};
-
-// Multiple CORS proxies — we try each in order until one works
 const CORS_PROXIES = [
   url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
   url => `https://thingproxy.freeboard.io/fetch/${url}`,
 ];
 
+// ── MARYLAND FISHING PRESETS ──────────────────────────────────────────────────
+// Easy to add/remove spots here
+const MD_PRESETS = [
+  { name: 'Dundee Creek, MD',      lat: 39.3220, lon: -76.3800, tide: '8574680' },
+  { name: 'Middle River, MD',      lat: 39.3330, lon: -76.4120, tide: '8574680' },
+  { name: 'Back River, MD',        lat: 39.2700, lon: -76.4500, tide: '8574680' },
+  { name: 'Chesapeake Bay Bridge', lat: 38.9926, lon: -76.3878, tide: '8575512' },
+  { name: 'Susquehanna Flats',     lat: 39.5280, lon: -76.0760, tide: '8574680' },
+  { name: 'Patapsco River',        lat: 39.2340, lon: -76.5490, tide: '8574680' },
+  { name: 'Eastern Bay',           lat: 38.9250, lon: -76.2340, tide: '8571892' },
+];
+
+// ── DEFAULTS ─────────────────────────────────────────────────────────────────
+const DEFAULTS = {
+  city: 'Owings Mills, MD', lat: 39.4143, lon: -76.7791,
+  fishName: 'Dundee Creek, MD', fishLat: 39.3220, fishLon: -76.3800,
+  tideStation: '8574680',
+  icalUrl: DEFAULT_ICAL, bg: DEFAULT_BG,
+  accentColor: '#e8c97a', timeFmt: '12', tempUnit: 'F',
+};
+
 function getCFG() {
-  try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('fishDash4') || '{}')); }
+  try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('fishDash5') || '{}')); }
   catch(e) { return Object.assign({}, DEFAULTS); }
 }
 let CFG = getCFG();
 
+// ── FISHING LIVE REFRESH ──────────────────────────────────────────────────────
+const FISH_REFRESH_INTERVAL = 5 * 60; // seconds
+let fishCountdown = FISH_REFRESH_INTERVAL;
+let fishRefreshTimer = null;
+let fishCountdownTimer = null;
+let lastWeatherData = null;
+
+function startFishRefreshCycle() {
+  clearInterval(fishRefreshTimer);
+  clearInterval(fishCountdownTimer);
+  fishCountdown = FISH_REFRESH_INTERVAL;
+  updateFishBadge();
+
+  fishCountdownTimer = setInterval(() => {
+    fishCountdown--;
+    updateFishBadge();
+    if (fishCountdown <= 0) {
+      fishCountdown = FISH_REFRESH_INTERVAL;
+      loadFishingWeather();
+    }
+  }, 1000);
+}
+
+function updateFishBadge() {
+  const el = document.getElementById('fish-refresh-text');
+  if (fishCountdown > 60) {
+    const mins = Math.ceil(fishCountdown / 60);
+    el.textContent = `${mins}m`;
+  } else if (fishCountdown > 0) {
+    el.textContent = `${fishCountdown}s`;
+  } else {
+    el.textContent = 'NOW';
+  }
+}
+
+function refreshFishingNow() {
+  fishCountdown = FISH_REFRESH_INTERVAL;
+  document.getElementById('fish-refresh-text').textContent = '…';
+  loadFishingWeather();
+}
+
+// ── FISHING WEATHER (separate from main weather) ──────────────────────────────
+function loadFishingWeather() {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${CFG.fishLat}&longitude=${CFG.fishLon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,pressure_msl,cloud_cover,precipitation&daily=temperature_2m_max,temperature_2m_min&temperature_unit=celsius&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York&forecast_days=1`;
+  fetch(url)
+    .then(r => r.json())
+    .then(d => {
+      lastWeatherData = d;
+      computeFishing(d.current, d.daily);
+      const now = new Date();
+      document.getElementById('fish-last-update').textContent =
+        `Updated ${now.toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit'})}`;
+    })
+    .catch(() => {
+      document.getElementById('fish-tip').textContent = '⚠️ Could not load live conditions.';
+    });
+}
+
+// ── APPLY SETTINGS ────────────────────────────────────────────────────────────
 function applySettings() {
   document.documentElement.style.setProperty('--accent', CFG.accentColor);
   const bgEl = document.getElementById('bg');
@@ -594,18 +758,68 @@ function applySettings() {
     bgEl.classList.remove('fade');
   }, 700);
   document.getElementById('weather-loc-label').textContent = `📍 ${CFG.city}`;
-  document.getElementById('fish-loc-label').textContent = `🎣 Fishing — ${CFG.fishName}`;
+  document.getElementById('fish-location-display').textContent = CFG.fishName;
   document.getElementById('tide-loc-label').textContent = `🌊 Tides — ${CFG.fishName}`;
 }
 applySettings();
 
-// ── SETTINGS UI ──────────────────────────────────────────────────────────────
+// ── LOCATION POPUP ────────────────────────────────────────────────────────────
+function buildPresets() {
+  const container = document.getElementById('loc-presets');
+  container.innerHTML = MD_PRESETS.map((p, i) =>
+    `<button class="loc-preset" onclick="fillPreset(${i})">${p.name}</button>`
+  ).join('');
+}
+
+function fillPreset(i) {
+  const p = MD_PRESETS[i];
+  document.getElementById('lp-name').value = p.name;
+  document.getElementById('lp-lat').value = p.lat;
+  document.getElementById('lp-lon').value = p.lon;
+  document.getElementById('lp-tide').value = p.tide;
+}
+
+function openLocPopup() {
+  document.getElementById('lp-name').value = CFG.fishName;
+  document.getElementById('lp-lat').value = CFG.fishLat;
+  document.getElementById('lp-lon').value = CFG.fishLon;
+  document.getElementById('lp-tide').value = CFG.tideStation;
+  buildPresets();
+  document.getElementById('loc-popup').classList.add('open');
+}
+
+function closeLocPopup() {
+  document.getElementById('loc-popup').classList.remove('open');
+}
+
+function saveLocPopup() {
+  const name = document.getElementById('lp-name').value.trim();
+  const lat  = parseFloat(document.getElementById('lp-lat').value);
+  const lon  = parseFloat(document.getElementById('lp-lon').value);
+  const tide = document.getElementById('lp-tide').value.trim();
+  if (!name || isNaN(lat) || isNaN(lon)) { alert('Please fill in a name and valid coordinates.'); return; }
+  CFG.fishName = name;
+  CFG.fishLat = lat;
+  CFG.fishLon = lon;
+  CFG.tideStation = tide || CFG.tideStation;
+  localStorage.setItem('fishDash5', JSON.stringify(CFG));
+  closeLocPopup();
+  applySettings();
+  loadFishingWeather();
+  loadTides();
+  startFishRefreshCycle();
+}
+
+// Close popup on bg click
+document.getElementById('loc-popup').addEventListener('click', e => {
+  if (e.target === document.getElementById('loc-popup')) closeLocPopup();
+});
+
+// ── SETTINGS UI ───────────────────────────────────────────────────────────────
 function openSettings() {
   document.getElementById('s-city').value = CFG.city;
   document.getElementById('s-lat').value = CFG.lat;
   document.getElementById('s-lon').value = CFG.lon;
-  document.getElementById('s-fish-name').value = CFG.fishName;
-  document.getElementById('s-tide-station').value = CFG.tideStation;
   document.getElementById('s-ical-url').value = CFG.icalUrl;
   document.getElementById('s-bg').value = (CFG.bg === DEFAULT_BG) ? '' : CFG.bg;
   document.getElementById('s-timefmt').value = CFG.timeFmt;
@@ -614,13 +828,10 @@ function openSettings() {
   document.getElementById('settings-panel').style.display = 'block';
 }
 function closeSettings() { document.getElementById('settings-panel').style.display = 'none'; }
-
 function saveSettings() {
   CFG.city = document.getElementById('s-city').value.trim() || DEFAULTS.city;
   CFG.lat = parseFloat(document.getElementById('s-lat').value) || DEFAULTS.lat;
   CFG.lon = parseFloat(document.getElementById('s-lon').value) || DEFAULTS.lon;
-  CFG.fishName = document.getElementById('s-fish-name').value.trim() || DEFAULTS.fishName;
-  CFG.tideStation = document.getElementById('s-tide-station').value.trim() || DEFAULTS.tideStation;
   CFG.icalUrl = document.getElementById('s-ical-url').value.trim() || DEFAULT_ICAL;
   const bgIn = document.getElementById('s-bg').value.trim();
   CFG.bg = bgIn || DEFAULT_BG;
@@ -628,22 +839,20 @@ function saveSettings() {
   CFG.tempUnit = document.getElementById('s-tempunit').value;
   const ac = document.querySelector('.color-swatch.active');
   if (ac) CFG.accentColor = ac.dataset.color;
-  localStorage.setItem('fishDash4', JSON.stringify(CFG));
+  localStorage.setItem('fishDash5', JSON.stringify(CFG));
   closeSettings();
   applySettings();
   loadWeather();
   loadTides();
   loadCalendar();
 }
-
 function resetSettings() {
   if (!confirm('Reset all settings to defaults?')) return;
-  localStorage.removeItem('fishDash4');
+  localStorage.removeItem('fishDash5');
   CFG = Object.assign({}, DEFAULTS);
   openSettings();
   applySettings();
 }
-
 document.querySelectorAll('.color-swatch').forEach(el => {
   el.addEventListener('click', () => {
     document.querySelectorAll('.color-swatch').forEach(e => e.classList.remove('active'));
@@ -651,17 +860,16 @@ document.querySelectorAll('.color-swatch').forEach(el => {
     document.documentElement.style.setProperty('--accent', el.dataset.color);
   });
 });
-
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   if (e.key === 's' || e.key === 'S') {
     const p = document.getElementById('settings-panel');
     p.style.display === 'block' ? closeSettings() : openSettings();
   }
-  if (e.key === 'Escape') closeSettings();
+  if (e.key === 'Escape') { closeSettings(); closeLocPopup(); }
 });
 
-// ── CLOCK ────────────────────────────────────────────────────────────────────
+// ── CLOCK ─────────────────────────────────────────────────────────────────────
 function updateClock() {
   const now = new Date();
   let h = now.getHours(), m = now.getMinutes();
@@ -684,7 +892,7 @@ function updateClock() {
 setInterval(updateClock, 500);
 updateClock();
 
-// ── WEATHER ──────────────────────────────────────────────────────────────────
+// ── WEATHER (main, for left panel) ───────────────────────────────────────────
 const WMO_ICONS = {0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'❄️',77:'🌨',80:'🌦',81:'🌧',82:'⛈',85:'🌨',86:'❄️',95:'⛈',96:'⛈',99:'⛈'};
 const WMO_DESC = {0:'Clear skies',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Showers',81:'Heavy showers',82:'Violent showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm+hail',99:'Heavy thunderstorm'};
 
@@ -713,7 +921,6 @@ function loadWeather() {
     document.getElementById('w-hum').textContent = c.relative_humidity_2m + '%';
     document.getElementById('w-pres').textContent = Math.round(c.pressure_msl) + ' hPa';
     document.getElementById('w-rain').textContent = (c.precipitation || 0).toFixed(2) + '"';
-
     const dn = ['Sun','Mon','Tue','Wed','Thu','Fri'];
     let html = '';
     for (let i = 1; i < 6; i++) {
@@ -722,7 +929,6 @@ function loadWeather() {
     }
     document.getElementById('forecast-row').innerHTML = html;
     document.getElementById('forecast-row').classList.remove('loading');
-
     document.getElementById('sunrise-val').textContent = fmtTime12(daily.sunrise[0]);
     document.getElementById('sunset-val').textContent = fmtTime12(daily.sunset[0]);
     const srD = new Date(daily.sunrise[0] + ':00');
@@ -730,16 +936,14 @@ function loadWeather() {
     document.getElementById('sol-gold').textContent = fmtTime12(srD.toISOString().substr(0, 16));
     const dirs = ['N','NE','E','SE','S','SW','W','NW'];
     document.getElementById('sol-winddir').textContent = dirs[Math.round(c.wind_direction_10m / 45) % 8] + ' ' + fmtWind(c.wind_speed_10m);
-
     computeMoon();
-    computeFishing(c, daily);
   }).catch(() => {
     document.getElementById('weather-desc').textContent = 'Weather unavailable';
     document.getElementById('weather-desc').classList.remove('loading');
   });
 }
 
-// ── MOON ─────────────────────────────────────────────────────────────────────
+// ── MOON ──────────────────────────────────────────────────────────────────────
 function computeMoon() {
   const now = new Date();
   const knownNew = new Date('2000-01-06T18:14:00Z');
@@ -762,6 +966,8 @@ function computeFishing(c, daily) {
   const tempF = c.temperature_2m * 9/5 + 32;
   const pres = c.pressure_msl;
   const cloud = c.cloud_cover;
+
+  // Scoring (10-point scale)
   const ws = wind < 5 ? 9 : wind < 10 ? 10 : wind < 15 ? 7 : wind < 20 ? 4 : 1;
   const ts = (tempF >= 55 && tempF <= 80) ? 10 : (tempF >= 45 && tempF < 55) ? 7 : (tempF > 80 && tempF <= 90) ? 6 : 3;
   const ps = pres > 1015 ? 9 : pres > 1008 ? 7 : pres > 1000 ? 5 : 3;
@@ -772,7 +978,10 @@ function computeFishing(c, daily) {
   scoreEl.textContent = overall.toFixed(1);
   scoreEl.classList.remove('loading');
   scoreEl.style.color = overall >= 7 ? 'var(--good)' : overall >= 5 ? 'var(--warn)' : 'var(--bad)';
-  document.getElementById('fish-score-label').textContent = overall >= 8 ? 'Excellent — get out there!' : overall >= 6 ? 'Good conditions' : overall >= 4 ? 'Fair — fish deeper' : 'Tough day — stay in';
+  document.getElementById('fish-score-label').textContent =
+    overall >= 8 ? 'Excellent — get out there!' :
+    overall >= 6 ? 'Good conditions' :
+    overall >= 4 ? 'Fair — fish deeper' : 'Tough day — stay in';
 
   function bar(fid, vid, score, label) {
     document.getElementById(vid).textContent = label;
@@ -785,12 +994,17 @@ function computeFishing(c, daily) {
   bar('fb-pres', 'fb-pres-val', ps, Math.round(pres) + ' hPa');
   bar('fb-cloud', 'fb-cloud-val', cs, cloud + '%');
 
-  const tips = wind > 15 ? 'High winds — try sheltered coves near Middle River.' :
-    tempF < 50 ? 'Cold water: fish slow and deep near the channel.' :
-    tempF > 85 ? 'Hot day: early morning or evening bite will be best.' :
-    pres < 1005 ? 'Low pressure — fish often lethargic. Try live bait.' :
-    cloud < 30 ? 'Clear skies — early morning topwater action likely.' :
-    'Conditions look great! Striped bass, perch & catfish should be active.';
+  // Dundee Creek specific tips
+  const tips =
+    wind > 15 ? `High winds — seek shelter in Dundee Creek's coves near the mouth.` :
+    tempF < 45 ? `Cold water: Dundee Creek perch go deep. Try bottom rigs near the channel.` :
+    tempF < 55 ? `Cool water: rockfish and perch moving slowly. Fish the channel edges.` :
+    tempF > 85 ? `Hot day: early morning or dusk for bass and rockfish at Dundee Creek.` :
+    pres < 1005 ? `Low pressure front — fish often lethargic. Try live spot or bloodworms.` :
+    cloud < 30 ? `Clear skies — early morning topwater near creek edges and docks.` :
+    overall >= 7 ? `Great day at Dundee! Striped bass, white perch & catfish should be active.` :
+    `Decent conditions — work the tributary mouths and grass edges.`;
+
   document.getElementById('fish-tip').textContent = '💡 ' + tips;
 }
 
@@ -811,8 +1025,7 @@ function loadTides() {
     document.getElementById('tide-list').innerHTML = display.map(p => {
       const dt = new Date(p.t);
       let h = dt.getHours(), m = dt.getMinutes();
-      const ap = h >= 12 ? 'PM' : 'AM';
-      h = h % 12 || 12;
+      const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
       return `<div class="tide-item"><div class="tide-left"><span class="tide-icon">${p.type==='H'?'📈':'📉'}</span><span class="tide-type">${p.type==='H'?'High Tide':'Low Tide'}</span></div><span class="tide-time">${h}:${String(m).padStart(2,'0')} ${ap}</span><span class="tide-ht">${parseFloat(p.v).toFixed(1)} ft</span></div>`;
     }).join('');
   }).catch(() => {
@@ -820,7 +1033,7 @@ function loadTides() {
   });
 }
 
-// ── ICAL / GOOGLE CALENDAR ────────────────────────────────────────────────────
+// ── ICAL ──────────────────────────────────────────────────────────────────────
 let allEvents = [], viewMonth = new Date().getMonth(), viewYear = new Date().getFullYear();
 
 function parseIcal(text) {
@@ -831,8 +1044,7 @@ function parseIcal(text) {
     if (line === 'BEGIN:VEVENT') { inEvent = true; cur = {}; return; }
     if (line === 'END:VEVENT') { if (cur?.summary) events.push(cur); inEvent = false; cur = null; return; }
     if (!inEvent || !cur) return;
-    const ci = line.indexOf(':');
-    if (ci === -1) return;
+    const ci = line.indexOf(':'); if (ci === -1) return;
     const key = line.slice(0, ci).split(';')[0].toUpperCase();
     const val = line.slice(ci + 1).trim();
     if (key === 'SUMMARY') cur.summary = val.replace(/\\,/g, ',').replace(/\\n/g, ' ').replace(/\\/g, '');
@@ -842,38 +1054,29 @@ function parseIcal(text) {
   });
   return events;
 }
-
 function parseIcalDt(val) {
   val = val.replace(/^VALUE=DATE:/,'');
   if (/^\d{8}$/.test(val)) return { date: `${val.slice(0,4)}-${val.slice(4,6)}-${val.slice(6,8)}`, allDay: true };
   const iso = `${val.slice(0,4)}-${val.slice(4,6)}-${val.slice(6,8)}T${val.slice(9,11)}:${val.slice(11,13)}:${val.slice(13,15)}${val.endsWith('Z') ? 'Z' : ''}`;
   return { dateTime: iso, allDay: false };
 }
-
 function getEventDays(ev) {
   const start = ev.dtstart, end = ev.dtend;
   if (!start) return [];
   const startStr = start.date || (start.dateTime || '').slice(0, 10);
   let endStr = end ? (end.date || (end.dateTime || '').slice(0, 10)) : startStr;
   if (start.allDay && end?.allDay) {
-    const ed = new Date(endStr + 'T12:00:00');
-    ed.setDate(ed.getDate() - 1);
-    endStr = ed.toISOString().slice(0, 10);
+    const ed = new Date(endStr + 'T12:00:00'); ed.setDate(ed.getDate() - 1); endStr = ed.toISOString().slice(0, 10);
   }
-  const days = [];
-  let cur = new Date(startStr + 'T12:00:00');
-  const endD = new Date(endStr + 'T12:00:00');
+  const days = []; let cur = new Date(startStr + 'T12:00:00'); const endD = new Date(endStr + 'T12:00:00');
   while (cur <= endD) { days.push(cur.toISOString().slice(0, 10)); cur.setDate(cur.getDate() + 1); }
   if (days.length > 1) ev.isMultiday = true;
   return days;
 }
-
-// Try each proxy in sequence until one returns valid iCal data
 async function fetchIcalWithFallback(icalUrl) {
   for (const makeProxy of CORS_PROXIES) {
-    const proxyUrl = makeProxy(icalUrl);
     try {
-      const r = await fetch(proxyUrl, { cache: 'no-cache' });
+      const r = await fetch(makeProxy(icalUrl), { cache: 'no-cache' });
       if (!r.ok) continue;
       const text = await r.text();
       if (text.includes('BEGIN:VCALENDAR')) return text;
@@ -881,54 +1084,40 @@ async function fetchIcalWithFallback(icalUrl) {
   }
   return null;
 }
-
 async function loadCalendar() {
   const statusEl = document.getElementById('cal-status');
   if (!CFG.icalUrl) { statusEl.textContent = '⚠️ No iCal URL'; renderCalendar(); renderUpcoming(); return; }
-
-  statusEl.textContent = '⏳ Syncing…';
-  statusEl.style.color = 'var(--text-muted)';
-
+  statusEl.textContent = '⏳ Syncing…'; statusEl.style.color = 'var(--text-muted)';
   const text = await fetchIcalWithFallback(CFG.icalUrl);
   if (text) {
-    allEvents = parseIcal(text);
-    renderCalendar();
-    renderUpcoming();
+    allEvents = parseIcal(text); renderCalendar(); renderUpcoming();
     const now = new Date();
     statusEl.textContent = `✅ ${allEvents.length} events · ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
     statusEl.style.color = 'var(--good)';
   } else {
-    statusEl.textContent = '⚠️ Sync failed';
-    statusEl.style.color = 'var(--bad)';
-    renderCalendar();
-    renderUpcoming();
+    statusEl.textContent = '⚠️ Sync failed'; statusEl.style.color = 'var(--bad)';
+    renderCalendar(); renderUpcoming();
   }
 }
-
 function changeViewMonth(dir) {
   viewMonth += dir;
   if (viewMonth > 11) { viewMonth = 0; viewYear++; }
   if (viewMonth < 0) { viewMonth = 11; viewYear--; }
   renderCalendar();
 }
-
 function renderCalendar() {
   const now = new Date();
   const mns = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('cal-month').textContent = `${mns[viewMonth]} ${viewYear}`;
   document.getElementById('cal-month').classList.remove('loading');
-
   const evByDate = {};
   allEvents.forEach(ev => { getEventDays(ev).forEach(ds => { (evByDate[ds] = evByDate[ds] || []).push(ev); }); });
-
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const daysInPrev = new Date(viewYear, viewMonth, 0).getDate();
   const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
   let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
   for (let i = 0; i < firstDay; i++) html += `<div class="cal-day other-month"><div class="cal-day-num">${daysInPrev - firstDay + 1 + i}</div></div>`;
-
   for (let day = 1; day <= daysInMonth; day++) {
     const isToday = day === now.getDate() && viewMonth === now.getMonth() && viewYear === now.getFullYear();
     const ds = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
@@ -937,13 +1126,11 @@ function renderCalendar() {
     if (evs.length > 3) evHtml += `<div class="cal-more">+${evs.length - 3}</div>`;
     html += `<div class="cal-day${isToday?' today':''}"><div class="cal-day-num">${day}</div><div class="cal-events">${evHtml}</div></div>`;
   }
-
   const total = firstDay + daysInMonth;
   const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
   for (let i = 1; i <= rem; i++) html += `<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
   document.getElementById('cal-grid').innerHTML = html;
 }
-
 function renderUpcoming() {
   const now = new Date();
   const todayStr = now.toISOString().slice(0, 10);
@@ -951,12 +1138,8 @@ function renderUpcoming() {
     .filter(ev => { const ds = ev.dtstart?.date || (ev.dtstart?.dateTime || '').slice(0,10); return ds >= todayStr; })
     .sort((a, b) => { const da = a.dtstart?.date||a.dtstart?.dateTime||'', db = b.dtstart?.date||b.dtstart?.dateTime||''; return da.localeCompare(db); })
     .slice(0, 5);
-
   const listEl = document.getElementById('upcoming-list');
-  if (!upcoming.length) {
-    listEl.innerHTML = `<div style="color:var(--text-muted);font-size:12px;font-style:italic;font-weight:300">No upcoming events found</div>`;
-    return;
-  }
+  if (!upcoming.length) { listEl.innerHTML = `<div style="color:var(--text-muted);font-size:12px;font-style:italic;font-weight:300">No upcoming events found</div>`; return; }
   const mos = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   listEl.innerHTML = upcoming.map(ev => {
     const ds = ev.dtstart?.date || (ev.dtstart?.dateTime || '').slice(0, 10);
@@ -965,8 +1148,7 @@ function renderUpcoming() {
     if (ev.dtstart?.dateTime && !ev.dtstart?.allDay) {
       const t = new Date(ev.dtstart.dateTime);
       let h = t.getHours(), m = t.getMinutes();
-      const ap = h >= 12 ? 'PM' : 'AM';
-      h = h % 12 || 12;
+      const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
       label += ` · ${h}:${String(m).padStart(2,'0')} ${ap}`;
     }
     return `<div class="upcoming-item"><div class="upcoming-date">${label}</div><div class="upcoming-title">${ev.summary || '(No title)'}</div></div>`;
@@ -978,8 +1160,10 @@ viewMonth = new Date().getMonth();
 viewYear = new Date().getFullYear();
 
 loadWeather();
+loadFishingWeather();
 loadTides();
 loadCalendar();
+startFishRefreshCycle();
 
 setInterval(loadCalendar, 60 * 1000);
 setInterval(() => { loadWeather(); loadTides(); }, 10 * 60 * 1000);
