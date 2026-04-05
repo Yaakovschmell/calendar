@@ -558,34 +558,82 @@ function computeMoon() {
   document.getElementById('sol-illum').textContent=illum+'%';
 }
 
-function computeFishing(c,daily) {
-  const wind=c.wind_speed_10m,tempF=c.temperature_2m*9/5+32,pres=c.pressure_msl,cloud=c.cloud_cover;
-  const ws=wind<5?9:wind<10?10:wind<15?7:wind<20?4:1;
-  const ts=(tempF>=55&&tempF<=80)?10:(tempF>=45&&tempF<55)?7:(tempF>80&&tempF<=90)?6:3;
-  const ps=pres>1015?9:pres>1008?7:pres>1000?5:3;
-  const cs=cloud<25?8:cloud<60?10:cloud<80?7:4;
-  const overall=Math.round((ws+ts+ps+cs)/4*10)/10;
-  const scoreEl=document.getElementById('fish-score');
-  scoreEl.textContent=overall.toFixed(1); scoreEl.classList.remove('loading');
-  scoreEl.style.color=overall>=7?'var(--good)':overall>=5?'var(--warn)':'var(--bad)';
-  document.getElementById('fish-score-label').textContent=overall>=8?'Excellent — get out there!':overall>=6?'Good conditions':overall>=4?'Fair — fish deeper':'Tough day — stay in';
-  function bar(fid,vid,score,label){document.getElementById(vid).textContent=label;const f=document.getElementById(fid);f.style.width=(score*10)+'%';f.style.background=score>=7?'var(--good)':score>=5?'var(--warn)':'var(--bad)';}
-  bar('fb-wind','fb-wind-val',ws,fmtWind(wind));
-  bar('fb-temp','fb-temp-val',ts,Math.round(tempF)+'°F');
-  bar('fb-pres','fb-pres-val',ps,Math.round(pres)+' hPa');
-  bar('fb-cloud','fb-cloud-val',cs,cloud+'%');
-  const loc=CFG.fishName.split(',')[0];
-  const tips=wind>15?`High winds — seek sheltered coves near ${loc}.`:
-    tempF<45?`Cold water: fish go deep near ${loc}. Try bottom rigs in the channel.`:
-    tempF<55?`Cool water: rockfish and perch moving slowly. Fish the channel edges at ${loc}.`:
-    tempF>85?`Hot day: early morning or dusk for bass and rockfish near ${loc}.`:
-    pres<1005?`Low pressure front — fish often lethargic. Try live spot or bloodworms.`:
-    cloud<30?`Clear skies — early morning topwater near creek edges and docks.`:
-    overall>=7?`Great day at ${loc}! Striped bass, white perch & catfish should be active.`:
-    `Decent conditions — work the tributary mouths and grass edges near ${loc}.`;
-  document.getElementById('fish-tip').textContent='💡 '+tips;
-}
+function computeFishing(c, daily) {
+  const wind = c.wind_speed_10m;
+  const tempF = c.temperature_2m * 9/5 + 32;
+  const pres = c.pressure_msl;
+  const cloud = c.cloud_cover;
+  const loc = CFG.fishName.split(',')[0].trim();
 
+  // Scoring
+  const ws = wind < 6 ? 9 : wind < 12 ? 8 : wind < 18 ? 5 : wind < 25 ? 2 : 1;
+  const ts = (tempF >= 62 && tempF <= 82) ? 10 :
+             (tempF >= 52 && tempF < 62) ? 7 :
+             (tempF > 82 && tempF <= 88) ? 6 : 3;
+  const ps = pres > 1015 ? 9 : pres > 1005 ? 7 : pres > 995 ? 5 : 3;
+  const cs = cloud < 30 ? 9 : cloud < 70 ? 8 : cloud < 85 ? 5 : 3;
+
+  const overall = Math.round((ws + ts + ps + cs) / 4 * 10) / 10;
+
+  // Update score display
+  const scoreEl = document.getElementById('fish-score');
+  scoreEl.textContent = overall.toFixed(1);
+  scoreEl.classList.remove('loading');
+  scoreEl.style.color = overall >= 7.5 ? 'var(--good)' : overall >= 5 ? 'var(--warn)' : 'var(--bad)';
+
+  document.getElementById('fish-score-label').textContent = 
+    overall >= 8 ? 'Excellent — perfect day!' :
+    overall >= 6.5 ? 'Good conditions' :
+    overall >= 4.5 ? 'Fair conditions' : 'Tough day — be strategic';
+
+  // Progress bars
+  function bar(fid, vid, score, label) {
+    document.getElementById(vid).textContent = label;
+    const f = document.getElementById(fid);
+    f.style.width = (score * 10) + '%';
+    f.style.background = score >= 7.5 ? 'var(--good)' : score >= 5 ? 'var(--warn)' : 'var(--bad)';
+  }
+
+  bar('fb-wind', 'fb-wind-val', ws, Math.round(wind) + ' mph');
+  bar('fb-temp', 'fb-temp-val', ts, Math.round(tempF) + '°F');
+  bar('fb-pres', 'fb-pres-val', ps, Math.round(pres) + ' hPa');
+  bar('fb-cloud', 'fb-cloud-val', cs, cloud + '%');
+
+  // ==================== SMART LOCATION-AWARE TIPS ====================
+  let tip = '';
+
+  if (wind > 18) {
+    tip = `High winds today — look for protected areas, mangroves, or leeward shorelines near ${loc}.`;
+  } else if (tempF < 52) {
+    tip = `Cold water at ${loc}. Fish slow and deep with jigs or live bait.`;
+  } else if (tempF > 88) {
+    tip = `Very hot day — focus on early morning/late evening bite near ${loc}.`;
+  } else if (pres < 1005) {
+    tip = `Low pressure — fish may be more active but scattered. Try moving baits.`;
+  } else if (overall >= 7.8) {
+    tip = `Great day at ${loc}! Fish should be very active.`;
+  } else if (overall >= 6) {
+    tip = `Solid conditions at ${loc}. Good chance of action today.`;
+  } else {
+    tip = `Fair conditions near ${loc}. Focus on structure, tide movement, and patience.`;
+  }
+
+  // Optional: Add regional species hints based on common Florida vs Maryland areas
+  if (CFG.fishLat < 30) { // Rough Florida check (latitude)
+    if (overall >= 7) {
+      tip += " Snook, redfish, and trout should be feeding well.";
+    }
+  } else {
+    // Maryland / Chesapeake style
+    if (overall >= 7) {
+      tip += " Striped bass, white perch & catfish should be active.";
+    }
+  }
+
+  document.getElementById('fish-tip').textContent = '💡 ' + tip;
+  document.getElementById('fish-last-update').textContent = 
+    'Updated ' + new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+}
 function loadTides() {
   const today=new Date(),tomorrow=new Date(today); tomorrow.setDate(today.getDate()+1);
   const fmt=d=>`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
