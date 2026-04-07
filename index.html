@@ -1086,37 +1086,43 @@ window.addEventListener('load', () => {
 }
 // ══════════════════════════════════
 //  INIT
+// INIT (fixed + carousel guaranteed to run)
 // ══════════════════════════════════
-viewMonth=new Date().getMonth(); viewYear=new Date().getFullYear();
-loadWeather(); loadFishingWeather(); loadTides(); loadCalendar(); startFishRefreshCycle();
-setInterval(loadCalendar, 2*60*1000);
-setInterval(()=>{ loadWeather(); loadTides(); }, 10*60*1000);
+window.addEventListener('load', () => {
+  viewMonth = new Date().getMonth();
+  viewYear = new Date().getFullYear();
+  
+  loadWeather();
+  loadFishingWeather();
+  loadTides();
+  loadCalendar();
+  startFishRefreshCycle();
+  
+  // Refresh weather & tides every 10 minutes
+  setInterval(() => { loadWeather(); loadTides(); }, 10 * 60 * 1000);
+  // Refresh calendar every 2 minutes
+  setInterval(loadCalendar, 2 * 60 * 1000);
+  
+  // Carousel (cycles every 3 seconds)
   (function initCarousel() {
-
-  console.log("CAROUSEL INIT RUNNING");
-
-  let currentSlide = 0;
-  const carousel = document.getElementById('cards-carousel');
-  const slides = document.querySelectorAll('.card-slide');
-  const totalSlides = slides.length;
-
-  console.log("carousel:", carousel);
-  console.log("slides:", totalSlides);
-
-  if (!carousel || totalSlides === 0) {
-    console.error("Carousel not found or empty");
-    return;
-  }
-
-  function nextSlide() {
-    currentSlide = (currentSlide + 1) % totalSlides;
-    console.log("SLIDE:", currentSlide);
-    carousel.style.transform = `translateX(-${currentSlide * 100}%)`;
-  }
-
-  setInterval(nextSlide, 3000);
-
-})();
+    console.log("✅ CAROUSEL INIT RUNNING");
+    const carousel = document.getElementById('cards-carousel');
+    const slides = document.querySelectorAll('.card-slide');
+    const totalSlides = slides.length;
+    
+    if (!carousel || totalSlides === 0) {
+      console.error("❌ Carousel elements not found");
+      return;
+    }
+    
+    let currentSlide = 0;
+    function nextSlide() {
+      currentSlide = (currentSlide + 1) % totalSlides;
+      carousel.style.transform = `translateX(-${currentSlide * 100}%)`;
+    }
+    setInterval(nextSlide, 3000);
+  })();
+});
 </script>
 </body>
 </html>
