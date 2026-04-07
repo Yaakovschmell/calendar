@@ -30,105 +30,158 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 #bg {
   position: fixed; inset: 0; z-index: 0;
   background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2400') center/cover no-repeat;
-  filter: contrast(1.2) brightness(0.75) saturate(1.1);
+  filter: brightness(0.90) saturate(1.1);
   transition: opacity 1.4s ease;
 }
-#bg::after { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.08); }
+#bg::after {
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(to right, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.04) 38%, transparent 65%);
+}
 #bg.fade { opacity: 0; }
+
+/* LAYOUT: left 40% | right 60% — more room for fishing */
 #app {
   position: fixed; inset: 0; z-index: 10;
-  display: grid; grid-template-columns: 35% 65%;
+  display: grid; grid-template-columns: 40% 60%;
   height: 100vh; overflow: hidden;
 }
+
 /* LEFT */
-#col-left { display:flex; flex-direction:column; padding:16px 10px 16px 16px; gap:10px; overflow:hidden; min-height:0; }
+#col-left { display:flex; flex-direction:column; padding:14px 10px 14px 14px; gap:9px; overflow:hidden; min-height:0; }
 #clock-block { flex-shrink:0; }
-#clock-time { font-family:var(--font-serif); font-size:clamp(60px,6.5vw,90px); font-weight:300; line-height:0.88; color:#fff; text-shadow:var(--shadow-text); letter-spacing:-2px; }
+#clock-time { font-family:var(--font-serif); font-size:clamp(54px,6vw,84px); font-weight:300; line-height:0.88; color:#fff; text-shadow:var(--shadow-text); letter-spacing:-2px; }
 #clock-ampm { font-family:var(--font-sans); font-weight:200; color:var(--accent); letter-spacing:4px; margin-left:7px; vertical-align:super; font-size:0.21em; }
 #clock-sep { transition:opacity 0.1s; }
 #clock-date { font-size:11px; font-weight:300; color:rgba(255,255,255,0.7); margin-top:5px; letter-spacing:2.5px; text-shadow:var(--shadow-text); text-transform:uppercase; }
-#widgets-grid { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:10px; flex:1; min-height:0; }
-.wcard { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.12); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-radius:var(--radius); padding:14px; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
-.wlabel { font-size:9px; font-weight:500; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:9px; flex-shrink:0; }
+
+/* 3-row layout: weather | fishing | tides+solar */
+#widgets-grid { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:auto 1fr auto; gap:9px; flex:1; min-height:0; }
+
+/* weather spans full width */
+#weather-card { grid-column: 1 / -1; }
+
+/* fishing takes full left column row 2 */
+#fishing-card { grid-row: 2; overflow:hidden; display:flex; flex-direction:column; }
+
+/* tides + solar stacked on right column rows 2+3 */
+#tides-card { grid-row: 2; overflow:hidden; display:flex; flex-direction:column; }
+#solar-card  { grid-row: 3; grid-column: 1 / -1; }
+
+.wcard {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--radius);
+  padding: 13px 14px;
+  display:flex; flex-direction:column; overflow:hidden; min-height:0;
+}
+.wlabel { font-size:9px; font-weight:500; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:8px; flex-shrink:0; text-shadow:var(--shadow-text); }
+
 /* WEATHER */
-#weather-main-row { display:flex; align-items:center; gap:10px; margin-bottom:9px; flex-shrink:0; }
-#weather-icon { font-size:40px; line-height:1; filter:drop-shadow(0 0 10px rgba(240,201,122,0.4)); }
-#weather-temp { font-family:var(--font-serif); font-size:50px; font-weight:300; line-height:1; text-shadow:var(--shadow-text); }
-#weather-desc { font-size:13px; color:var(--text-dim); font-style:italic; text-shadow:var(--shadow-text); }
-#weather-feels { font-size:11px; color:var(--text-muted); margin-top:2px; }
-.w-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:8px; flex-shrink:0; }
-.w-stat { background:rgba(0,0,0,0.25); border-radius:8px; padding:6px 9px; }
+#weather-main-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-shrink:0; }
+#weather-icon { font-size:36px; line-height:1; filter:drop-shadow(0 0 10px rgba(240,201,122,0.4)); }
+#weather-temp { font-family:var(--font-serif); font-size:44px; font-weight:300; line-height:1; text-shadow:var(--shadow-text); }
+#weather-desc { font-size:12px; color:var(--text-dim); font-style:italic; text-shadow:var(--shadow-text); }
+#weather-feels { font-size:10px; color:var(--text-muted); margin-top:2px; }
+.w-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-bottom:7px; flex-shrink:0; }
+.w-stat { background:rgba(0,0,0,0.25); border-radius:8px; padding:5px 8px; }
 .w-stat-label { font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:2px; }
-.w-stat-value { font-family:var(--font-serif); font-size:16px; color:var(--text); text-shadow:var(--shadow-text); }
-#forecast-row { display:flex; gap:5px; margin-bottom:8px; flex-shrink:0; }
-.fc-day { flex:1; background:rgba(0,0,0,0.22); border-radius:8px; padding:6px 2px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.w-stat-value { font-family:var(--font-serif); font-size:15px; color:var(--text); text-shadow:var(--shadow-text); }
+#forecast-row { display:flex; gap:5px; margin-bottom:7px; flex-shrink:0; }
+.fc-day { flex:1; background:rgba(0,0,0,0.22); border-radius:8px; padding:5px 2px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:2px; }
 .fc-name { font-size:9px; color:var(--text-muted); text-transform:uppercase; }
-.fc-icon { font-size:15px; }
-.fc-hi { font-family:var(--font-serif); font-size:13px; color:var(--text); }
-.fc-lo { font-size:10px; color:var(--text-muted); }
+.fc-icon { font-size:14px; }
+.fc-hi { font-family:var(--font-serif); font-size:12px; color:var(--text); }
+.fc-lo { font-size:9px; color:var(--text-muted); }
 #sun-row { display:flex; gap:5px; flex-shrink:0; }
-.sun-pill { flex:1; background:rgba(232,201,122,0.1); border:1px solid rgba(232,201,122,0.18); border-radius:8px; padding:6px 3px; text-align:center; }
+.sun-pill { flex:1; background:rgba(232,201,122,0.1); border:1px solid rgba(232,201,122,0.18); border-radius:8px; padding:5px 3px; text-align:center; }
 .sun-label { font-size:9px; color:var(--accent); text-transform:uppercase; }
-.sun-value { font-family:var(--font-serif); font-size:13px; color:var(--text); margin-top:2px; }
-/* FISHING */
+.sun-value { font-family:var(--font-serif); font-size:12px; color:var(--text); margin-top:2px; }
+
+/* FISHING — bigger, scrollable report */
 .fish-header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; flex-shrink:0; }
 #fish-live-badge { display:flex; align-items:center; gap:4px; background:rgba(122,219,160,0.12); border:1px solid rgba(122,219,160,0.28); border-radius:20px; padding:3px 8px; cursor:pointer; transition:background 0.2s; }
 #fish-live-badge:hover { background:rgba(122,219,160,0.25); }
 .live-dot { width:6px; height:6px; background:var(--good); border-radius:50%; animation:livepulse 1.8s infinite; }
 @keyframes livepulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
-.fish-loc-row { display:flex; align-items:center; gap:6px; margin-bottom:9px; flex-shrink:0; }
-#fish-location-display { font-size:12px; color:var(--text-dim); font-style:italic; font-weight:300; }
-#fish-header { display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-shrink:0; }
-#fish-score { font-family:var(--font-serif); font-size:62px; font-weight:600; line-height:1; text-shadow:var(--shadow-text); }
-#fish-score-sub { font-size:11px; color:var(--text-muted); font-weight:300; }
-#fish-score-label { font-size:13px; color:var(--text-dim); margin-top:3px; font-weight:300; font-style:italic; }
-.bar-row { margin-bottom:7px; flex-shrink:0; }
-.bar-labels { display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-bottom:3px; }
+#fish-refresh-text { font-size:9px; color:var(--good); letter-spacing:1px; font-weight:500; }
+.fish-loc-row { display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-shrink:0; }
+#fish-location-display { font-size:11px; color:var(--text-dim); font-style:italic; font-weight:300; }
+#fish-score-row { display:flex; align-items:center; gap:12px; margin-bottom:8px; flex-shrink:0; }
+#fish-score { font-family:var(--font-serif); font-size:54px; font-weight:600; line-height:1; text-shadow:var(--shadow-text); }
+#fish-score-sub { font-size:10px; color:var(--text-muted); font-weight:300; }
+#fish-score-label { font-size:12px; color:var(--text-dim); margin-top:2px; font-weight:300; font-style:italic; }
+.bar-row { margin-bottom:5px; flex-shrink:0; }
+.bar-labels { display:flex; justify-content:space-between; font-size:9px; color:var(--text-muted); margin-bottom:2px; }
 .bar-track { height:4px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden; }
 .bar-fill { height:100%; border-radius:4px; transition:width 1.3s cubic-bezier(0.4,0,0.2,1); }
-#fish-tip { margin-top:8px; font-size:11px; color:var(--text-dim); font-style:italic; line-height:1.65; border-top:1px solid rgba(255,255,255,0.09); padding-top:7px; font-weight:300; flex:1; }
+
+/* THE BIG FISHING REPORT — scrollable */
+#fish-report-block {
+  flex:1; overflow-y:auto; min-height:0;
+  margin-top:8px; border-top:1px solid rgba(255,255,255,0.1);
+  padding-top:8px;
+}
+#fish-report-block::-webkit-scrollbar { width:3px; }
+#fish-report-block::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:4px; }
+
+.fish-report-section { margin-bottom:10px; }
+.fish-report-title { font-size:9px; letter-spacing:2px; color:var(--accent); text-transform:uppercase; margin-bottom:4px; }
+.fish-report-text { font-size:11px; color:var(--text-dim); font-weight:300; line-height:1.65; }
+.fish-report-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
+.fish-tag { font-size:9px; padding:2px 7px; background:rgba(232,201,122,0.14); border:1px solid rgba(232,201,122,0.25); border-radius:10px; color:var(--accent); }
+.fish-tag.bad { background:rgba(240,122,122,0.12); border-color:rgba(240,122,122,0.25); color:var(--bad); }
+.fish-tag.good { background:rgba(122,219,160,0.12); border-color:rgba(122,219,160,0.25); color:var(--good); }
+
 #fish-last-update { margin-top:5px; font-size:9px; color:var(--text-muted); flex-shrink:0; }
+
 /* TIDES */
-#tide-list { display:flex; flex-direction:column; gap:8px; margin-top:4px; flex:1; }
-.tide-item { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; background:rgba(0,0,0,0.25); border-radius:9px; }
-.tide-left { display:flex; align-items:center; gap:8px; }
-.tide-icon { font-size:15px; }
-.tide-type { font-family:var(--font-serif); font-size:16px; color:var(--text-dim); }
-.tide-time { font-size:12px; color:var(--text-muted); }
-.tide-ht { font-family:var(--font-serif); font-size:17px; color:var(--accent); }
-/* SOLAR */
-#solar-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:4px; flex:1; }
-.solar-item { background:rgba(0,0,0,0.25); border-radius:9px; padding:0 10px; text-align:center; display:flex; flex-direction:column; justify-content:center; }
-.solar-label { font-size:9px; color:var(--accent); letter-spacing:1.5px; text-transform:uppercase; }
-.solar-value { font-family:var(--font-serif); font-size:19px; color:var(--text); margin-top:4px; }
+#tide-list { display:flex; flex-direction:column; gap:6px; margin-top:4px; flex:1; overflow-y:auto; min-height:0; }
+#tide-list::-webkit-scrollbar { width:2px; }
+#tide-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:4px; }
+.tide-item { display:flex; align-items:center; justify-content:space-between; padding:7px 10px; background:rgba(0,0,0,0.25); border-radius:9px; flex-shrink:0; }
+.tide-left { display:flex; align-items:center; gap:7px; }
+.tide-icon { font-size:14px; }
+.tide-type { font-family:var(--font-serif); font-size:14px; color:var(--text-dim); }
+.tide-time { font-size:11px; color:var(--text-muted); }
+.tide-ht { font-family:var(--font-serif); font-size:15px; color:var(--accent); }
+
+/* SOLAR — compact horizontal row */
+#solar-card { padding:10px 14px; }
+#solar-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:6px; }
+.solar-item { background:rgba(0,0,0,0.25); border-radius:9px; padding:6px 8px; text-align:center; }
+.solar-label { font-size:8px; color:var(--accent); letter-spacing:1.5px; text-transform:uppercase; }
+.solar-value { font-family:var(--font-serif); font-size:15px; color:var(--text); margin-top:2px; }
+
 /* RIGHT: CALENDAR */
 #col-right { background:rgba(255,255,255,0.04); border-left:1px solid rgba(255,255,255,0.08); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); display:flex; flex-direction:column; overflow:hidden; height:100vh; }
-#cal-block { flex:1; padding:20px 20px 12px; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
-#cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-shrink:0; }
-#cal-month { font-family:var(--font-serif); font-size:32px; color:var(--text); font-weight:400; letter-spacing:0.5px; }
+#cal-block { flex:1; padding:18px 18px 10px; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
+#cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-shrink:0; }
+#cal-month { font-family:var(--font-serif); font-size:30px; color:var(--text); font-weight:400; letter-spacing:0.5px; }
 #cal-right-ctrl { display:flex; align-items:center; gap:8px; }
 #cal-status { font-size:10px; color:var(--text-muted); font-style:italic; }
 #cal-nav { display:flex; gap:4px; }
-#cal-nav button { background:rgba(255,255,255,0.07); border:1px solid var(--border); color:var(--text); width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:15px; transition:background 0.2s; }
+#cal-nav button { background:rgba(255,255,255,0.07); border:1px solid var(--border); color:var(--text); width:28px; height:28px; border-radius:8px; cursor:pointer; font-size:14px; transition:background 0.2s; }
 #cal-nav button:hover { background:rgba(232,201,122,0.18); }
-#cal-grid { display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:1fr; gap:5px; flex:1; min-height:0; }
-.cal-dow { text-align:center; font-size:10px; font-weight:500; color:var(--accent); text-transform:uppercase; letter-spacing:2px; padding-bottom:6px; display:flex; align-items:center; justify-content:center; }
-.cal-day { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:8px 8px 5px; display:flex; flex-direction:column; overflow:hidden; transition:background 0.15s; min-height:0; }
+#cal-grid { display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:1fr; gap:4px; flex:1; min-height:0; }
+.cal-dow { text-align:center; font-size:9px; font-weight:500; color:var(--accent); text-transform:uppercase; letter-spacing:2px; padding-bottom:5px; display:flex; align-items:center; justify-content:center; }
+.cal-day { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:7px 7px 4px; display:flex; flex-direction:column; overflow:hidden; transition:background 0.15s; min-height:0; }
 .cal-day:hover { background:rgba(255,255,255,0.09); }
-.cal-day-num { font-family:var(--font-serif); font-size:17px; color:var(--text-dim); line-height:1; flex-shrink:0; margin-bottom:3px; }
+.cal-day-num { font-family:var(--font-serif); font-size:16px; color:var(--text-dim); line-height:1; flex-shrink:0; margin-bottom:2px; }
 .cal-day.today { background:rgba(232,201,122,0.18); border-color:rgba(232,201,122,0.5); }
 .cal-day.today .cal-day-num { color:var(--accent); font-weight:600; }
 .cal-day.other-month { opacity:0.3; }
 .cal-events { display:flex; flex-direction:column; gap:2px; overflow:hidden; flex:1; }
-.cal-event { font-size:9px; font-weight:500; background:var(--accent); color:#1a1000; border-radius:3px; padding:2px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.45; }
+.cal-event { font-size:8.5px; font-weight:500; background:var(--accent); color:#1a1000; border-radius:3px; padding:2px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.45; }
 .cal-event.multiday { background:rgba(122,184,240,0.65); color:#fff; }
 .cal-more { font-size:8px; color:var(--text-muted); padding:0 2px; }
-#upcoming-block { padding:12px 20px 16px; flex-shrink:0; border-top:1px solid rgba(255,255,255,0.07); }
-.section-label-sm { font-size:9px; font-weight:500; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:9px; }
+#upcoming-block { padding:10px 18px 14px; flex-shrink:0; border-top:1px solid rgba(255,255,255,0.07); }
+.section-label-sm { font-size:9px; font-weight:500; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:8px; }
 #upcoming-list { display:flex; flex-direction:column; gap:5px; }
-.upcoming-item { display:flex; align-items:center; gap:10px; padding:9px 12px; background:rgba(0,0,0,0.28); border-radius:8px; border-left:2px solid var(--accent); }
-.upcoming-date { font-family:var(--font-serif); font-size:13px; color:var(--accent); white-space:nowrap; min-width:100px; }
-.upcoming-title { font-size:13px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:300; }
+.upcoming-item { display:flex; align-items:center; gap:10px; padding:8px 11px; background:rgba(0,0,0,0.28); border-radius:8px; border-left:2px solid var(--accent); }
+.upcoming-date { font-family:var(--font-serif); font-size:12px; color:var(--accent); white-space:nowrap; min-width:90px; }
+.upcoming-title { font-size:12px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:300; }
+
 /* SETTINGS */
 #settings-btn { position:fixed; top:14px; right:14px; z-index:100; background:rgba(0,0,0,0.4); border:1px solid var(--border); backdrop-filter:blur(10px); color:var(--text); border-radius:50%; width:34px; height:34px; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.2s; box-shadow:0 2px 12px rgba(0,0,0,0.5); }
 #settings-btn:hover { background:rgba(232,201,122,0.2); }
@@ -156,9 +209,13 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 .btn-primary:hover { opacity:0.85; }
 .btn-secondary { background:rgba(255,255,255,0.07); color:var(--text); border:1px solid var(--border); }
 .btn-secondary:hover { background:rgba(255,255,255,0.13); }
+.btn-geo { background:rgba(122,219,160,0.15); color:var(--good); border:1px solid rgba(122,219,160,0.3); }
+.btn-geo:hover { background:rgba(122,219,160,0.28); }
 .s-presets { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
 .s-preset { background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:11px; color:var(--text-dim); cursor:pointer; font-family:var(--font-sans); transition:all 0.2s; }
 .s-preset:hover { background:rgba(232,201,122,0.18); border-color:var(--accent); color:var(--accent); }
+.geo-status { font-size:11px; color:var(--good); margin-top:6px; font-style:italic; min-height:16px; }
+
 .loading { opacity:0.35; animation:pulse 1.8s infinite; }
 @keyframes pulse { 0%,100%{opacity:0.35} 50%{opacity:0.62} }
 ::-webkit-scrollbar { width:3px; }
@@ -168,15 +225,17 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 <body>
 <div id="bg"></div>
 <button id="settings-btn" onclick="openSettings()" title="Settings (S)">⚙️</button>
+
 <div id="app">
   <div id="col-left">
     <div id="clock-block">
       <div id="clock-time"><span id="cl-h">12</span><span id="clock-sep" style="opacity:0.5">:</span><span id="cl-m">00</span><span id="clock-ampm">AM</span></div>
       <div id="clock-date">Loading…</div>
     </div>
+
     <div id="widgets-grid">
-      <!-- WEATHER -->
-      <div class="wcard">
+      <!-- WEATHER — full width row 1 -->
+      <div class="wcard" id="weather-card">
         <div class="wlabel" id="weather-loc-label">📍 Baltimore, MD</div>
         <div id="weather-main-row">
           <div id="weather-icon" class="loading">🌤</div>
@@ -188,21 +247,22 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
           <div class="w-stat"><div class="w-stat-label">Pressure</div><div class="w-stat-value" id="w-pres">--</div></div>
           <div class="w-stat"><div class="w-stat-label">Precip</div><div class="w-stat-value" id="w-rain">--</div></div>
         </div>
-        <div id="forecast-row" class="loading" style="min-height:44px"></div>
+        <div id="forecast-row" class="loading" style="min-height:40px"></div>
         <div id="sun-row">
           <div class="sun-pill"><div class="sun-label">🌙 Moon</div><div class="sun-value" id="moon-val">--</div></div>
           <div class="sun-pill"><div class="sun-label">🌅 Rise</div><div class="sun-value" id="sunrise-val">--</div></div>
           <div class="sun-pill"><div class="sun-label">🌇 Set</div><div class="sun-value" id="sunset-val">--</div></div>
         </div>
       </div>
-      <!-- FISHING -->
-      <div class="wcard">
+
+      <!-- FISHING — bigger, scrollable -->
+      <div class="wcard" id="fishing-card">
         <div class="fish-header-row">
-          <div class="wlabel" style="margin-bottom:0">🎣 Fishing</div>
+          <div class="wlabel" style="margin-bottom:0">🎣 Fishing Report</div>
           <div id="fish-live-badge" onclick="refreshFishingNow()"><div class="live-dot"></div><span id="fish-refresh-text">LIVE</span></div>
         </div>
         <div class="fish-loc-row"><div id="fish-location-display">Dundee Creek, MD</div></div>
-        <div id="fish-header">
+        <div id="fish-score-row">
           <div id="fish-score" class="loading">--</div>
           <div><div id="fish-score-sub">out of 10</div><div id="fish-score-label">Calculating…</div></div>
         </div>
@@ -210,19 +270,25 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
         <div class="bar-row"><div class="bar-labels"><span>Temp</span><span id="fb-temp-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-temp" style="width:0%"></div></div></div>
         <div class="bar-row"><div class="bar-labels"><span>Pressure</span><span id="fb-pres-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-pres" style="width:0%"></div></div></div>
         <div class="bar-row"><div class="bar-labels"><span>Cloud</span><span id="fb-cloud-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-cloud" style="width:0%"></div></div></div>
-        <div id="fish-tip">Loading…</div>
+
+        <!-- FULL REPORT — scrollable -->
+        <div id="fish-report-block">
+          <div id="fish-report-content"><div class="loading" style="font-size:12px">Loading report…</div></div>
+        </div>
         <div id="fish-last-update"></div>
       </div>
+
       <!-- TIDES -->
-      <div class="wcard">
-        <div class="wlabel" id="tide-loc-label">🌊 Tides — Dundee Creek</div>
+      <div class="wcard" id="tides-card">
+        <div class="wlabel" id="tide-loc-label">🌊 Tides</div>
         <div id="tide-list"><div class="loading" style="font-size:12px;color:var(--text-muted)">Loading…</div></div>
       </div>
+
       <!-- SOLAR -->
-      <div class="wcard">
+      <div class="wcard" id="solar-card">
         <div class="wlabel">☀️ Solar & Moon</div>
         <div id="solar-grid">
-          <div class="solar-item"><div class="solar-label">Moon Phase</div><div class="solar-value" id="sol-moon">--</div></div>
+          <div class="solar-item"><div class="solar-label">Phase</div><div class="solar-value" id="sol-moon">--</div></div>
           <div class="solar-item"><div class="solar-label">Illumination</div><div class="solar-value" id="sol-illum">--</div></div>
           <div class="solar-item"><div class="solar-label">Golden Hour</div><div class="solar-value" id="sol-gold">--</div></div>
           <div class="solar-item"><div class="solar-label">Wind Dir</div><div class="solar-value" id="sol-winddir">--</div></div>
@@ -230,6 +296,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
       </div>
     </div>
   </div>
+
+  <!-- RIGHT: CALENDAR -->
   <div id="col-right">
     <div id="cal-block">
       <div id="cal-header">
@@ -248,69 +316,77 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   </div>
 </div>
 
-<!-- SETTINGS — everything editable here, no code changes needed -->
+<!-- SETTINGS -->
 <div id="settings-panel">
   <div class="s-inner">
     <div class="s-title">Dashboard Settings</div>
-    <div class="s-subtitle">Everything is configurable here — no code edits needed. Press S to toggle · Esc to close.</div>
-    
+    <div class="s-subtitle">Type a city name and click "Look Up" — coordinates, tide station, and fishing location all update automatically. Press S to toggle · Esc to close.</div>
+
     <div class="s-section">
       <div class="s-section-title">📍 Weather Location</div>
       <div class="s-grid">
-        <div class="s-field full"><label>Display Label (shown on dashboard)</label><input id="s-city" placeholder="Baltimore, MD (Park Heights)"></div>
-        <div class="s-field"><label>Latitude</label><input id="s-lat" placeholder="39.3648"></div>
-        <div class="s-field"><label>Longitude</label><input id="s-lon" placeholder="-76.6924"></div>
+        <div class="s-field full">
+          <label>City / Location Name</label>
+          <div style="display:flex;gap:8px">
+            <input id="s-city" placeholder="Jupiter, FL" style="flex:1">
+            <button class="btn btn-geo" onclick="geoLookupWeather()">🔍 Look Up</button>
+          </div>
+          <div class="geo-status" id="geo-weather-status"></div>
+        </div>
+        <div class="s-field"><label>Latitude (auto-filled)</label><input id="s-lat" placeholder="26.9342"></div>
+        <div class="s-field"><label>Longitude (auto-filled)</label><input id="s-lon" placeholder="-80.0942"></div>
       </div>
     </div>
-    
+
     <div class="s-section">
       <div class="s-section-title">🎣 Fishing Location</div>
       <div class="s-grid">
         <div class="s-field full">
+          <label>Fishing Spot Name</label>
+          <div style="display:flex;gap:8px">
+            <input id="s-fish-name" placeholder="Jupiter Inlet, FL" style="flex:1">
+            <button class="btn btn-geo" onclick="geoLookupFishing()">🔍 Look Up</button>
+          </div>
+          <div class="geo-status" id="geo-fish-status"></div>
+          <div class="s-note">Type your fishing spot and click Look Up — coordinates and nearest NOAA tide station fill automatically.</div>
+        </div>
+        <div class="s-field full">
           <label>Maryland Quick Picks</label>
           <div class="s-presets" id="s-fish-presets"></div>
-          <div class="s-note">Click a preset to auto-fill below, then Save &amp; Apply.</div>
         </div>
-        <div class="s-field full"><label>Location Name</label><input id="s-fish-name" placeholder="Dundee Creek, MD"></div>
-        <div class="s-field"><label>Latitude</label><input id="s-fish-lat" placeholder="39.3220"></div>
-        <div class="s-field"><label>Longitude</label><input id="s-fish-lon" placeholder="-76.3800"></div>
-        
-        <!-- NEW FIELD - fully configurable species -->
+        <div class="s-field"><label>Latitude (auto-filled)</label><input id="s-fish-lat" placeholder="26.9342"></div>
+        <div class="s-field"><label>Longitude (auto-filled)</label><input id="s-fish-lon" placeholder="-80.0900"></div>
         <div class="s-field full">
-          <label>Common Local Species</label>
-          <input id="s-fish-species" placeholder="Snook, Redfish, Speckled Trout">
-          <div class="s-note">These will automatically appear in the fishing tip when conditions are good. Change anytime in settings.</div>
+          <label>NOAA Tide Station ID (auto-filled, or enter manually)</label>
+          <input id="s-tide-station" placeholder="8722670">
+          <div class="s-note">Auto-filled when you use Look Up. To find manually: <strong>tidesandcurrents.noaa.gov/stations.html</strong></div>
         </div>
-        
         <div class="s-field full">
-          <label>NOAA Tide Station ID</label>
-          <input id="s-tide-station" placeholder="8574680">
-          <div class="s-note">Find your station at <strong>tidesandcurrents.noaa.gov</strong> — search near your fishing spot and copy the Station ID.</div>
+          <label>Common Species at This Spot</label>
+          <input id="s-fish-species" placeholder="Snook, Redfish, Tarpon, Speckled Trout">
+          <div class="s-note">These appear in the fishing report when conditions are good.</div>
         </div>
       </div>
     </div>
-    
+
     <div class="s-section">
       <div class="s-section-title">📅 Google Calendar</div>
       <div class="s-grid">
         <div class="s-field full">
           <label>iCal Secret URL</label>
           <input id="s-ical-url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics">
-          <div class="s-note">In Google Calendar: Settings → (your calendar) → "Secret address in iCal format". The URL must end with <strong>/basic.ics</strong>.</div>
+          <div class="s-note">Google Calendar → Settings → (your calendar) → "Secret address in iCal format"</div>
         </div>
       </div>
     </div>
-    
+
     <div class="s-section">
       <div class="s-section-title">🖼 Background Image</div>
       <div class="s-grid">
-        <div class="s-field full">
-          <label>Image URL (leave blank for default ocean photo)</label>
-          <input id="s-bg" placeholder="https://images.unsplash.com/…">
-        </div>
+        <div class="s-field full"><label>Image URL (leave blank for default beach photo)</label><input id="s-bg" placeholder="https://images.unsplash.com/…"></div>
       </div>
     </div>
-    
+
     <div class="s-section">
       <div class="s-section-title">🎨 Accent Color</div>
       <div class="color-row" id="color-row">
@@ -324,7 +400,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
         <div class="color-swatch" data-color="#c8d0e0" style="background:#c8d0e0" title="Silver"></div>
       </div>
     </div>
-    
+
     <div class="s-section">
       <div class="s-section-title">🕐 Display</div>
       <div class="s-grid">
@@ -332,7 +408,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
         <div class="s-field"><label>Temperature Unit</label><select id="s-tempunit"><option value="F">Fahrenheit (°F)</option><option value="C">Celsius (°C)</option></select></div>
       </div>
     </div>
-    
+
     <div class="s-actions">
       <button class="btn btn-primary" onclick="saveSettings()">Save & Apply</button>
       <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
@@ -343,69 +419,134 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 </div>
 
 <script>
+// ═══════════════════════════════════════════
+//  CONSTANTS & CONFIG
+// ═══════════════════════════════════════════
 const DEFAULT_BG = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2400';
-const DEFAULT_ICAL = 'https://calendar.google.com/calendar/ical/family10441524180619137635%40group.calendar.google.com/private-25c841481546d6316e8ee4301b131792/basic.ics';
+const DEFAULT_ICAL = 'https://calendar.google.com/calendar/ical/aaronspero1%40gmail.com/private-fcf40194d406df57c8aaba1dbef1c70c/basic.ics';
 const CORS_PROXIES = [
   url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
   url => `https://thingproxy.freeboard.io/fetch/${url}`,
 ];
 const MD_PRESETS = [
-  { name:'Dundee Creek, MD', lat:39.3220, lon:-76.3800, tide:'8574680' },
-  { name:'Middle River, MD', lat:39.3330, lon:-76.4120, tide:'8574680' },
-  { name:'Back River, MD', lat:39.2700, lon:-76.4500, tide:'8574680' },
-  { name:'Chesapeake Bay Bridge', lat:38.9926, lon:-76.3878, tide:'8575512' },
-  { name:'Susquehanna Flats', lat:39.5280, lon:-76.0760, tide:'8574680' },
-  { name:'Patapsco River', lat:39.2340, lon:-76.5490, tide:'8574680' },
-  { name:'Eastern Bay', lat:38.9250, lon:-76.2340, tide:'8571892' },
+  { name:'Dundee Creek, MD', lat:39.3220, lon:-76.3800, tide:'8574680', species:'Striped bass, white perch, catfish' },
+  { name:'Middle River, MD', lat:39.3330, lon:-76.4120, tide:'8574680', species:'Striped bass, white perch, largemouth bass' },
+  { name:'Back River, MD', lat:39.2700, lon:-76.4500, tide:'8574680', species:'Striped bass, perch, catfish' },
+  { name:'Chesapeake Bay Bridge', lat:38.9926, lon:-76.3878, tide:'8575512', species:'Striped bass, bluefish, flounder' },
+  { name:'Susquehanna Flats', lat:39.5280, lon:-76.0760, tide:'8574680', species:'Striped bass, perch' },
+  { name:'Patapsco River', lat:39.2340, lon:-76.5490, tide:'8574680', species:'Striped bass, white perch, catfish' },
+  { name:'Eastern Bay', lat:38.9250, lon:-76.2340, tide:'8571892', species:'Striped bass, flounder, bluefish' },
 ];
 const DEFAULTS = {
-  city: 'Baltimore, MD (Park Heights)',
-  lat: 39.3648,
-  lon: -76.6924,
+  city: 'Baltimore, MD',
+  lat: 39.2904, lon: -76.6122,
   fishName: 'Dundee Creek, MD',
-  fishLat: 39.3220,
-  fishLon: -76.3800,
-  fishSpecies: 'Striped bass, white perch & catfish',   // ← NEW: fully editable in settings
+  fishLat: 39.3220, fishLon: -76.3800,
+  fishSpecies: 'Striped bass, white perch & catfish',
   tideStation: '8574680',
   icalUrl: DEFAULT_ICAL,
   bg: DEFAULT_BG,
   accentColor: '#e8c97a',
-  timeFmt: '12',
-  tempUnit: 'F',
+  timeFmt: '12', tempUnit: 'F',
 };
 function getCFG() {
-  try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('fishDash7') || '{}')); }
+  try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('fishDash9') || '{}')); }
   catch(e) { return Object.assign({}, DEFAULTS); }
 }
 let CFG = getCFG();
-const FISH_REFRESH_INTERVAL = 5 * 60;
-let fishCountdown = FISH_REFRESH_INTERVAL, fishCountdownTimer = null;
-function startFishRefreshCycle() {
-  clearInterval(fishCountdownTimer); fishCountdown = FISH_REFRESH_INTERVAL; updateFishBadge();
-  fishCountdownTimer = setInterval(() => {
-    fishCountdown--; updateFishBadge();
-    if (fishCountdown <= 0) { fishCountdown = FISH_REFRESH_INTERVAL; loadFishingWeather(); }
-  }, 1000);
+
+// ═══════════════════════════════════════════
+//  GEO LOOKUP — auto lat/lon + nearest NOAA tide station
+// ═══════════════════════════════════════════
+async function geocodePlace(name) {
+  // Use Open-Meteo geocoding (free, no key)
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`;
+  const r = await fetch(url);
+  const d = await r.json();
+  if (!d.results || !d.results.length) throw new Error('Place not found');
+  return { lat: d.results[0].latitude, lon: d.results[0].longitude, name: d.results[0].name + (d.results[0].admin1 ? ', '+d.results[0].admin1 : '') };
 }
-function updateFishBadge() {
-  const el = document.getElementById('fish-refresh-text');
-  if (fishCountdown > 60) el.textContent = Math.ceil(fishCountdown/60)+'m';
-  else if (fishCountdown > 0) el.textContent = fishCountdown+'s';
-  else el.textContent = 'NOW';
+
+async function findNearestTideStation(lat, lon) {
+  // Query NOAA stations API for nearest station
+  const url = `https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=waterlevels&units=english`;
+  try {
+    const r = await fetch(url);
+    const d = await r.json();
+    if (!d.stations) return null;
+    let best = null, bestDist = Infinity;
+    d.stations.forEach(s => {
+      const dlat = s.lat - lat, dlon = s.lng - lon;
+      const dist = Math.sqrt(dlat*dlat + dlon*dlon);
+      if (dist < bestDist) { bestDist = dist; best = s; }
+    });
+    return best ? { id: best.id, name: best.name } : null;
+  } catch(e) { return null; }
 }
-function refreshFishingNow() { fishCountdown = FISH_REFRESH_INTERVAL; document.getElementById('fish-refresh-text').textContent='…'; loadFishingWeather(); }
+
+async function geoLookupWeather() {
+  const name = document.getElementById('s-city').value.trim();
+  if (!name) return;
+  const status = document.getElementById('geo-weather-status');
+  status.textContent = '🔍 Looking up…';
+  status.style.color = 'var(--text-muted)';
+  try {
+    const geo = await geocodePlace(name);
+    document.getElementById('s-city').value = geo.name;
+    document.getElementById('s-lat').value = geo.lat.toFixed(4);
+    document.getElementById('s-lon').value = geo.lon.toFixed(4);
+    status.textContent = `✅ Found: ${geo.lat.toFixed(4)}, ${geo.lon.toFixed(4)}`;
+    status.style.color = 'var(--good)';
+  } catch(e) {
+    status.textContent = '❌ Location not found — try a different name';
+    status.style.color = 'var(--bad)';
+  }
+}
+
+async function geoLookupFishing() {
+  const name = document.getElementById('s-fish-name').value.trim();
+  if (!name) return;
+  const status = document.getElementById('geo-fish-status');
+  status.textContent = '🔍 Looking up coordinates…';
+  status.style.color = 'var(--text-muted)';
+  try {
+    const geo = await geocodePlace(name);
+    document.getElementById('s-fish-name').value = geo.name;
+    document.getElementById('s-fish-lat').value = geo.lat.toFixed(4);
+    document.getElementById('s-fish-lon').value = geo.lon.toFixed(4);
+    status.textContent = `📍 Found coordinates. Looking up nearest tide station…`;
+    status.style.color = 'var(--warn)';
+
+    const station = await findNearestTideStation(geo.lat, geo.lon);
+    if (station) {
+      document.getElementById('s-tide-station').value = station.id;
+      status.textContent = `✅ Coords + tide station found: ${station.name} (${station.id})`;
+      status.style.color = 'var(--good)';
+    } else {
+      status.textContent = `✅ Coordinates found. Enter NOAA tide station manually.`;
+      status.style.color = 'var(--warn)';
+    }
+  } catch(e) {
+    status.textContent = '❌ Location not found — try a different name';
+    status.style.color = 'var(--bad)';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════
 function applySettings() {
   document.documentElement.style.setProperty('--accent', CFG.accentColor);
   const bgEl = document.getElementById('bg');
   bgEl.classList.add('fade');
   setTimeout(() => { bgEl.style.backgroundImage = `url('${CFG.bg||DEFAULT_BG}')`; bgEl.classList.remove('fade'); }, 700);
-  document.getElementById('weather-loc-label').textContent = '📍 '+CFG.city;
+  document.getElementById('weather-loc-label').textContent = '📍 ' + CFG.city;
   document.getElementById('fish-location-display').textContent = CFG.fishName;
-  document.getElementById('tide-loc-label').textContent = '🌊 Tides — '+CFG.fishName.split(',')[0];
+  document.getElementById('tide-loc-label').textContent = '🌊 Tides — ' + CFG.fishName.split(',')[0];
 }
 applySettings();
-// SETTINGS
+
 function buildFishPresets() {
   document.getElementById('s-fish-presets').innerHTML = MD_PRESETS.map((p,i)=>
     `<button class="s-preset" onclick="fillFishPreset(${i})">${p.name}</button>`).join('');
@@ -416,6 +557,9 @@ function fillFishPreset(i) {
   document.getElementById('s-fish-lat').value = p.lat;
   document.getElementById('s-fish-lon').value = p.lon;
   document.getElementById('s-tide-station').value = p.tide;
+  document.getElementById('s-fish-species').value = p.species || '';
+  document.getElementById('geo-fish-status').textContent = '✅ Preset loaded';
+  document.getElementById('geo-fish-status').style.color = 'var(--good)';
 }
 function openSettings() {
   document.getElementById('s-city').value = CFG.city;
@@ -431,6 +575,8 @@ function openSettings() {
   document.getElementById('s-timefmt').value = CFG.timeFmt;
   document.getElementById('s-tempunit').value = CFG.tempUnit;
   document.querySelectorAll('.color-swatch').forEach(el=>el.classList.toggle('active', el.dataset.color===CFG.accentColor));
+  document.getElementById('geo-weather-status').textContent = '';
+  document.getElementById('geo-fish-status').textContent = '';
   buildFishPresets();
   document.getElementById('settings-panel').style.display = 'block';
 }
@@ -447,7 +593,7 @@ function saveSettings() {
   if (!isNaN(fl)) CFG.fishLat = fl;
   if (!isNaN(fo)) CFG.fishLon = fo;
   if (ts) CFG.tideStation = ts;
-  CFG.fishSpecies = document.getElementById('s-fish-species').value.trim();   // ← NEW
+  CFG.fishSpecies = document.getElementById('s-fish-species').value.trim() || DEFAULTS.fishSpecies;
   CFG.icalUrl = document.getElementById('s-ical-url').value.trim() || DEFAULT_ICAL;
   const bgIn = document.getElementById('s-bg').value.trim();
   CFG.bg = bgIn || DEFAULT_BG;
@@ -455,13 +601,13 @@ function saveSettings() {
   CFG.tempUnit = document.getElementById('s-tempunit').value;
   const ac = document.querySelector('.color-swatch.active');
   if (ac) CFG.accentColor = ac.dataset.color;
-  localStorage.setItem('fishDash7', JSON.stringify(CFG));
+  localStorage.setItem('fishDash9', JSON.stringify(CFG));
   closeSettings(); applySettings();
   loadWeather(); loadFishingWeather(); loadTides(); loadCalendar(); startFishRefreshCycle();
 }
 function resetSettings() {
   if (!confirm('Reset all settings to defaults?')) return;
-  localStorage.removeItem('fishDash7');
+  localStorage.removeItem('fishDash9');
   CFG = Object.assign({}, DEFAULTS);
   openSettings(); applySettings();
 }
@@ -477,7 +623,10 @@ document.addEventListener('keydown', e=>{
   if (e.key==='s'||e.key==='S') { const p=document.getElementById('settings-panel'); p.style.display==='block'?closeSettings():openSettings(); }
   if (e.key==='Escape') closeSettings();
 });
-// CLOCK
+
+// ═══════════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════════
 function updateClock() {
   const now = new Date(); let h = now.getHours(), m = now.getMinutes();
   const ampmEl = document.getElementById('clock-ampm');
@@ -490,126 +639,345 @@ function updateClock() {
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('clock-date').textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
 }
-setInterval(updateClock,500); updateClock();
-// WEATHER
-const WMO_ICONS={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'❄️',77:'🌨',80:'🌦',81:'🌧',82:'⛈',85:'🌨',86:'❄️',95:'⛈',96:'⛈',99:'⛈'};
-const WMO_DESC={0:'Clear skies',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Showers',81:'Heavy showers',82:'Violent showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm+hail',99:'Heavy thunderstorm'};
-function fmtTemp(c) { return CFG.tempUnit==='F'?Math.round(c*9/5+32)+'°F':Math.round(c)+'°C'; }
+setInterval(updateClock, 500); updateClock();
+
+// ═══════════════════════════════════════════
+//  WEATHER — FIXED WMO codes (rain vs overcast)
+// ═══════════════════════════════════════════
+const WMO_ICONS = {
+  0:'☀️', 1:'🌤', 2:'⛅', 3:'☁️',
+  45:'🌫', 48:'🌫',
+  51:'🌦', 53:'🌦', 55:'🌧',
+  56:'🌧', 57:'🌧',
+  61:'🌧', 63:'🌧', 65:'🌧',
+  66:'🌧', 67:'🌧',
+  71:'🌨', 73:'🌨', 75:'❄️', 77:'🌨',
+  80:'🌦', 81:'🌧', 82:'⛈',
+  85:'🌨', 86:'❄️',
+  95:'⛈', 96:'⛈', 99:'⛈'
+};
+const WMO_DESC = {
+  0:'Clear skies', 1:'Mostly clear', 2:'Partly cloudy', 3:'Overcast',
+  45:'Foggy', 48:'Icy fog',
+  51:'Light drizzle', 53:'Drizzle', 55:'Heavy drizzle',
+  56:'Freezing drizzle', 57:'Heavy freezing drizzle',
+  61:'Light rain', 63:'Rain', 65:'Heavy rain',
+  66:'Freezing rain', 67:'Heavy freezing rain',
+  71:'Light snow', 73:'Snow', 75:'Heavy snow', 77:'Snow grains',
+  80:'Light showers', 81:'Rain showers', 82:'Heavy showers',
+  85:'Snow showers', 86:'Heavy snow showers',
+  95:'Thunderstorm', 96:'Thunderstorm + hail', 99:'Heavy thunderstorm'
+};
+
+function fmtTemp(c) { return CFG.tempUnit==='F' ? Math.round(c*9/5+32)+'°F' : Math.round(c)+'°C'; }
 function fmtWind(mph) { return Math.round(mph)+' mph'; }
-function fmtTime12(iso) { const t=new Date(iso.length===16?iso+':00':iso); let h=t.getHours(),m=t.getMinutes(); const ap=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${String(m).padStart(2,'0')} ${ap}`; }
+function fmtTime12(iso) {
+  const t = new Date(iso.length===16 ? iso+':00' : iso);
+  let h=t.getHours(), m=t.getMinutes();
+  const ap=h>=12?'PM':'AM'; h=h%12||12;
+  return `${h}:${String(m).padStart(2,'0')} ${ap}`;
+}
+
 function loadWeather() {
-  const url=`https://api.open-meteo.com/v1/forecast?latitude=${CFG.lat}&longitude=${CFG.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,pressure_msl,cloud_cover,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset&temperature_unit=celsius&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York&forecast_days=6`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${CFG.lat}&longitude=${CFG.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,pressure_msl,cloud_cover,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset&temperature_unit=celsius&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York&forecast_days=6`;
   fetch(url).then(r=>r.json()).then(d=>{
-    const c=d.current,daily=d.daily;
-    document.getElementById('weather-icon').textContent=WMO_ICONS[c.weather_code]||'🌡'; document.getElementById('weather-icon').classList.remove('loading');
-    document.getElementById('weather-temp').textContent=fmtTemp(c.temperature_2m); document.getElementById('weather-temp').classList.remove('loading');
-    document.getElementById('weather-desc').textContent=WMO_DESC[c.weather_code]||'Unknown'; document.getElementById('weather-desc').classList.remove('loading');
-    document.getElementById('weather-feels').textContent='Feels like '+fmtTemp(c.apparent_temperature);
-    document.getElementById('w-wind').textContent=fmtWind(c.wind_speed_10m);
-    document.getElementById('w-hum').textContent=c.relative_humidity_2m+'%';
-    document.getElementById('w-pres').textContent=Math.round(c.pressure_msl)+' hPa';
-    document.getElementById('w-rain').textContent=(c.precipitation||0).toFixed(2)+'"';
-    const dn=['Sun','Mon','Tue','Wed','Thu','Fri']; let html='';
-    for(let i=1;i<6;i++){const dt=new Date(daily.time[i]+'T00:00:00');html+=`<div class="fc-day"><div class="fc-name">${dn[dt.getDay()]}</div><div class="fc-icon">${WMO_ICONS[daily.weather_code[i]]||'🌡'}</div><div class="fc-hi">${fmtTemp(daily.temperature_2m_max[i])}</div><div class="fc-lo">${fmtTemp(daily.temperature_2m_min[i])}</div></div>`;}
-    document.getElementById('forecast-row').innerHTML=html; document.getElementById('forecast-row').classList.remove('loading');
-    document.getElementById('sunrise-val').textContent=fmtTime12(daily.sunrise[0]);
-    document.getElementById('sunset-val').textContent=fmtTime12(daily.sunset[0]);
-    const srD=new Date(daily.sunrise[0]+':00'); srD.setHours(srD.getHours()+1);
-    document.getElementById('sol-gold').textContent=fmtTime12(srD.toISOString().substr(0,16));
-    const dirs=['N','NE','E','SE','S','SW','W','NW'];
-    document.getElementById('sol-winddir').textContent=dirs[Math.round(c.wind_direction_10m/45)%8]+' '+fmtWind(c.wind_speed_10m);
+    const c=d.current, daily=d.daily;
+    document.getElementById('weather-icon').textContent = WMO_ICONS[c.weather_code] || '🌡';
+    document.getElementById('weather-icon').classList.remove('loading');
+    document.getElementById('weather-temp').textContent = fmtTemp(c.temperature_2m);
+    document.getElementById('weather-temp').classList.remove('loading');
+    document.getElementById('weather-desc').textContent = WMO_DESC[c.weather_code] || 'Unknown';
+    document.getElementById('weather-desc').classList.remove('loading');
+    document.getElementById('weather-feels').textContent = 'Feels like '+fmtTemp(c.apparent_temperature);
+    document.getElementById('w-wind').textContent = fmtWind(c.wind_speed_10m);
+    document.getElementById('w-hum').textContent = c.relative_humidity_2m+'%';
+    document.getElementById('w-pres').textContent = Math.round(c.pressure_msl)+' hPa';
+    document.getElementById('w-rain').textContent = (c.precipitation||0).toFixed(2)+'"';
+    const dn = ['Sun','Mon','Tue','Wed','Thu','Fri']; let html='';
+    for(let i=1;i<6;i++){
+      const dt=new Date(daily.time[i]+'T00:00:00');
+      html+=`<div class="fc-day"><div class="fc-name">${dn[dt.getDay()]}</div><div class="fc-icon">${WMO_ICONS[daily.weather_code[i]]||'🌡'}</div><div class="fc-hi">${fmtTemp(daily.temperature_2m_max[i])}</div><div class="fc-lo">${fmtTemp(daily.temperature_2m_min[i])}</div></div>`;
+    }
+    document.getElementById('forecast-row').innerHTML = html;
+    document.getElementById('forecast-row').classList.remove('loading');
+    document.getElementById('sunrise-val').textContent = fmtTime12(daily.sunrise[0]);
+    document.getElementById('sunset-val').textContent = fmtTime12(daily.sunset[0]);
+    const srD = new Date(daily.sunrise[0]+':00'); srD.setHours(srD.getHours()+1);
+    document.getElementById('sol-gold').textContent = fmtTime12(srD.toISOString().substr(0,16));
+    const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+    document.getElementById('sol-winddir').textContent = dirs[Math.round(c.wind_direction_10m/45)%8]+' '+fmtWind(c.wind_speed_10m);
     computeMoon();
-  }).catch(()=>{document.getElementById('weather-desc').textContent='Weather unavailable';document.getElementById('weather-desc').classList.remove('loading');});
+  }).catch(()=>{ document.getElementById('weather-desc').textContent='Weather unavailable'; document.getElementById('weather-desc').classList.remove('loading'); });
 }
+
+// ═══════════════════════════════════════════
+//  MOON
+// ═══════════════════════════════════════════
+let moonFrac = 0;
 function computeMoon() {
-  const now=new Date(),knownNew=new Date('2000-01-06T18:14:00Z'),synodic=29.53058867;
-  const days=(now-knownNew)/864e5,frac=((days%synodic)+synodic)%synodic/synodic;
-  const illum=Math.round((1-Math.cos(2*Math.PI*frac))/2*100);
+  const now=new Date(), knownNew=new Date('2000-01-06T18:14:00Z'), synodic=29.53058867;
+  const days=(now-knownNew)/864e5;
+  moonFrac = ((days%synodic)+synodic)%synodic/synodic;
+  const illum=Math.round((1-Math.cos(2*Math.PI*moonFrac))/2*100);
   const phases=[[0.033,'New Moon','🌑'],[0.25,'Waxing Crescent','🌒'],[0.29,'First Quarter','🌓'],[0.5,'Waxing Gibbous','🌔'],[0.533,'Full Moon','🌕'],[0.75,'Waning Gibbous','🌖'],[0.79,'Last Quarter','🌗'],[1,'Waning Crescent','🌘']];
-  let name='Waning Crescent',emoji='🌘';
-  for(const[limit,n,e]of phases){if(frac<limit){name=n;emoji=e;break;}}
-  const short=name.split(' ').slice(-1)[0];
-  document.getElementById('moon-val').textContent=`${emoji} ${short}`;
-  document.getElementById('sol-moon').textContent=`${emoji} ${short}`;
-  document.getElementById('sol-illum').textContent=illum+'%';
+  let name='Waning Crescent', emoji='🌘';
+  for(const[limit,n,e]of phases){if(moonFrac<limit){name=n;emoji=e;break;}}
+  document.getElementById('moon-val').textContent = emoji+' '+name.split(' ').slice(-1)[0];
+  document.getElementById('sol-moon').textContent = emoji+' '+name.split(' ').slice(-1)[0];
+  document.getElementById('sol-illum').textContent = illum+'%';
+  return { name, emoji, illum, frac: moonFrac };
 }
-// ==================== UPDATED computeFishing (uses your custom species) ====================
-function computeFishing(c) {
+
+// ═══════════════════════════════════════════
+//  FISHING — rich report
+// ═══════════════════════════════════════════
+const FISH_REFRESH_INTERVAL = 5 * 60;
+let fishCountdown = FISH_REFRESH_INTERVAL, fishCountdownTimer = null;
+function startFishRefreshCycle() {
+  clearInterval(fishCountdownTimer); fishCountdown = FISH_REFRESH_INTERVAL; updateFishBadge();
+  fishCountdownTimer = setInterval(()=>{
+    fishCountdown--; updateFishBadge();
+    if (fishCountdown <= 0) { fishCountdown = FISH_REFRESH_INTERVAL; loadFishingWeather(); }
+  }, 1000);
+}
+function updateFishBadge() {
+  const el = document.getElementById('fish-refresh-text');
+  if (fishCountdown > 60) el.textContent = Math.ceil(fishCountdown/60)+'m';
+  else if (fishCountdown > 0) el.textContent = fishCountdown+'s';
+  else el.textContent = 'NOW';
+}
+function refreshFishingNow() { fishCountdown = FISH_REFRESH_INTERVAL; document.getElementById('fish-refresh-text').textContent='…'; loadFishingWeather(); }
+
+function loadFishingWeather() {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${CFG.fishLat}&longitude=${CFG.fishLon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,pressure_msl,cloud_cover,precipitation&hourly=temperature_2m,wind_speed_10m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset&temperature_unit=celsius&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York&forecast_days=2`;
+  fetch(url).then(r=>r.json()).then(d=>{
+    computeFishing(d);
+    document.getElementById('fish-last-update').textContent = 'Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  }).catch(()=>{ document.getElementById('fish-report-content').innerHTML = '<div class="fish-report-text" style="color:var(--bad)">⚠️ Could not load live conditions.</div>'; });
+}
+
+function computeFishing(data) {
+  const c = data.current;
+  const daily = data.daily;
+  const hourly = data.hourly;
   const wind = c.wind_speed_10m;
-  const tempF = c.temperature_2m * 9/5 + 32;
+  const tempC = c.temperature_2m;
+  const tempF = tempC * 9/5 + 32;
   const pres = c.pressure_msl;
   const cloud = c.cloud_cover;
+  const precip = c.precipitation || 0;
   const loc = CFG.fishName.split(',')[0].trim();
+  const species = CFG.fishSpecies || 'fish';
+  const now = new Date();
+  const hour = now.getHours();
 
+  // Moon info
+  const moon = computeMoon();
+  const moonScore = moon.frac < 0.1 || moon.frac > 0.9 ? 9 :   // new moon
+                    Math.abs(moon.frac - 0.5) < 0.05 ? 8 :        // full moon
+                    7;
+
+  // Scoring
   const ws = wind < 6 ? 9 : wind < 12 ? 8 : wind < 18 ? 5 : wind < 25 ? 2 : 1;
-  const ts = (tempF >= 62 && tempF <= 82) ? 10 : (tempF >= 52 && tempF < 62) ? 7 : (tempF > 82 && tempF <= 88) ? 6 : 3;
-  const ps = pres > 1015 ? 9 : pres > 1005 ? 7 : pres > 995 ? 5 : 3;
+  const ts = (tempF >= 62 && tempF <= 82) ? 10 : (tempF >= 52 && tempF < 62) ? 7 : (tempF > 82 && tempF <= 90) ? 6 : 3;
+  const ps = pres > 1018 ? 8 : pres > 1010 ? 9 : pres > 1000 ? 6 : pres > 990 ? 4 : 2;
   const cs = cloud < 30 ? 9 : cloud < 70 ? 8 : cloud < 85 ? 5 : 3;
-
-  const overall = Math.round((ws + ts + ps + cs) / 4 * 10) / 10;
+  const rainPenalty = precip > 0.1 ? -1.5 : precip > 0.02 ? -0.5 : 0;
+  const overall = Math.max(1, Math.min(10, Math.round(((ws+ts+ps+cs+moonScore)/5 + rainPenalty)*10)/10));
 
   const scoreEl = document.getElementById('fish-score');
   scoreEl.textContent = overall.toFixed(1);
   scoreEl.classList.remove('loading');
   scoreEl.style.color = overall >= 7.5 ? 'var(--good)' : overall >= 5 ? 'var(--warn)' : 'var(--bad)';
+  document.getElementById('fish-score-label').textContent =
+    overall >= 8.5 ? 'Exceptional — go now!' :
+    overall >= 7 ? 'Good conditions' :
+    overall >= 5 ? 'Fair — be strategic' : 'Tough day';
 
-  document.getElementById('fish-score-label').textContent = 
-    overall >= 8 ? 'Excellent — perfect day!' :
-    overall >= 6.5 ? 'Good conditions' :
-    overall >= 4.5 ? 'Fair conditions' : 'Tough day — be strategic';
-
-  function bar(fid,vid,score,label){
-    document.getElementById(vid).textContent=label;
-    const f=document.getElementById(fid);
-    f.style.width=(score*10)+'%';
-    f.style.background=score>=7.5?'var(--good)':score>=5?'var(--warn)':'var(--bad)';
+  function bar(fid,vid,score,label) {
+    document.getElementById(vid).textContent = label;
+    const f = document.getElementById(fid);
+    f.style.width = (score*10)+'%';
+    f.style.background = score>=7.5?'var(--good)':score>=5?'var(--warn)':'var(--bad)';
   }
   bar('fb-wind','fb-wind-val',ws,Math.round(wind)+' mph');
   bar('fb-temp','fb-temp-val',ts,Math.round(tempF)+'°F');
   bar('fb-pres','fb-pres-val',ps,Math.round(pres)+' hPa');
   bar('fb-cloud','fb-cloud-val',cs,cloud+'%');
 
-  let tip = '';
-  if (wind > 18) tip = `High winds — seek protected areas near ${loc}.`;
-  else if (tempF < 52) tip = `Cold water: fish go deep near ${loc}.`;
-  else if (tempF > 88) tip = `Hot day: early morning or dusk near ${loc}.`;
-  else if (pres < 1005) tip = `Low pressure — fish often more active near ${loc}.`;
-  else if (overall >= 7.5) tip = `Great day at ${loc}!`;
-  else if (overall >= 6) tip = `Good conditions at ${loc}.`;
-  else tip = `Fair conditions near ${loc}.`;
+  // ── BEST BITE WINDOWS TODAY ──
+  const sunriseISO = daily.sunrise[0];
+  const sunsetISO = daily.sunset[0];
+  const srH = new Date(sunriseISO+':00').getHours();
+  const ssH = new Date(sunsetISO+':00').getHours();
 
-  if (CFG.fishSpecies && overall >= 6.5) {
-    tip += ` ${CFG.fishSpecies} should be active.`;
+  const biteWindows = [];
+  if (srH) {
+    biteWindows.push(`🌅 Dawn (${srH}:00–${srH+2}:00 AM) — prime feeding window`);
+    biteWindows.push(`🌇 Dusk (${ssH-1}:00–${ssH+1}:00 PM) — evening feeding spike`);
+  }
+  if (moonScore >= 8) biteWindows.push(`🌕 Moon influence strong — night fishing can be excellent`);
+  if (pres > 1012 && pres < 1020) biteWindows.push(`📊 Stable pressure — fish are likely on regular feeding patterns`);
+  if (pres < 1000) biteWindows.push(`📉 Low pressure — fish moving to deeper water, bite can be sluggish`);
+
+  // ── CONDITIONS ANALYSIS ──
+  let condText = '';
+  if (precip > 0.05) {
+    condText += `🌧 Currently raining (${precip.toFixed(2)}"  last hour). `;
+    if (pres < 1005) condText += 'Falling pressure often triggers feeding just before a storm — fish the edge of the rain.';
+    else condText += 'Light rain can suppress surface bite; try bottom rigs or slow trolling.';
+  } else if (cloud > 80) {
+    condText += `☁️ Heavy overcast. Diffused light can extend feeding windows — topwater and mid-column presentations work well. `;
+  } else if (cloud < 30) {
+    condText += `☀️ Bright sun makes fish light-sensitive. Target shade: docks, bridges, deeper structure. `;
+  } else {
+    condText += `⛅ Partly cloudy — good light conditions for active feeding. `;
+  }
+  if (wind > 15) condText += `Wind ${Math.round(wind)} mph — seek protected water; leeward shorelines and creek mouths. `;
+  else if (wind < 5) condText += `Calm water — fish can be spooky; use light line, longer leaders. `;
+  if (tempF > 85) condText += `Water temps likely ${Math.round(tempF-5)}–${Math.round(tempF)}°F — fish are heat-stressed, most active at dawn/dusk. `;
+  else if (tempF < 50) condText += `Cold water slows metabolism — fish slow presentations near bottom. `;
+
+  // ── RECOMMENDED TECHNIQUES ──
+  let techText = '';
+  const month = now.getMonth(); // 0=Jan
+  if (tempF >= 62 && tempF <= 82) {
+    techText = `Optimal feeding temp. `;
+    if (cloud > 50 || (hour < srH+2 || hour > ssH-1))
+      techText += 'Topwater plugs, poppers, and soft plastics near structure. ';
+    else
+      techText += 'Mid-column jigging, live bait, and deeper structure. ';
+  } else if (tempF < 55) {
+    techText = 'Cold water: fish slow. Bottom rigs with cut bait, slow-rolled soft plastics. Stay near channel edges where water is slightly warmer. ';
+  } else if (tempF > 85) {
+    techText = 'Heat stress: fish deep or in current breaks. Shade spots near docks and bridges early AM. Try live shrimp or cut bait on bottom. ';
+  }
+  if (pres < 1002) techText += 'Pre-front feeding can be aggressive — work fast presentations. ';
+
+  // ── SPECIES TIPS ──
+  let speciesTip = '';
+  if (species && overall >= 5) {
+    speciesTip = `${species} — `;
+    if (overall >= 7.5) speciesTip += 'expect active feeding throughout the day.';
+    else if (overall >= 5.5) speciesTip += 'target the dawn/dusk windows for best action.';
+    else speciesTip += 'fish slow and deep today; bite will be tough.';
   }
 
-  document.getElementById('fish-tip').textContent = '💡 ' + tip;
-  document.getElementById('fish-last-update').textContent = 'Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  // ── WHAT OTHERS ARE CATCHING (seasonal tips) ──
+  const seasonalTip = getSeasonalTip(month, tempF, loc);
+
+  // ── BUILD REPORT HTML ──
+  const reportEl = document.getElementById('fish-report-content');
+  let html = '';
+
+  html += `<div class="fish-report-section">
+    <div class="fish-report-title">📍 Conditions Now</div>
+    <div class="fish-report-text">${condText}</div>
+  </div>`;
+
+  if (biteWindows.length) {
+    html += `<div class="fish-report-section">
+      <div class="fish-report-title">⏰ Best Bite Windows</div>
+      ${biteWindows.map(w=>`<div class="fish-report-text" style="margin-bottom:3px">${w}</div>`).join('')}
+    </div>`;
+  }
+
+  html += `<div class="fish-report-section">
+    <div class="fish-report-title">🎯 Recommended Technique</div>
+    <div class="fish-report-text">${techText}</div>
+  </div>`;
+
+  if (speciesTip) {
+    html += `<div class="fish-report-section">
+      <div class="fish-report-title">🐟 Target Species</div>
+      <div class="fish-report-text">${speciesTip}</div>
+      <div class="fish-report-tags">${(species).split(',').map(s=>`<span class="fish-tag">${s.trim()}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  if (seasonalTip) {
+    html += `<div class="fish-report-section">
+      <div class="fish-report-title">📅 What's Biting This Time of Year</div>
+      <div class="fish-report-text">${seasonalTip}</div>
+    </div>`;
+  }
+
+  // Condition tags
+  const tags = [];
+  if (wind < 10) tags.push({t:'Calm Wind', c:'good'});
+  else if (wind > 18) tags.push({t:'High Wind', c:'bad'});
+  if (tempF >= 62 && tempF <= 82) tags.push({t:'Ideal Temp', c:'good'});
+  if (precip > 0.05) tags.push({t:'Raining', c:'bad'});
+  if (pres > 1010 && pres < 1022) tags.push({t:'Stable Pressure', c:'good'});
+  if (pres < 1000) tags.push({t:'Low Pressure', c:'bad'});
+  if (moon.illum > 85) tags.push({t:'Full Moon', c:'good'});
+  if (cloud > 50 && cloud < 85) tags.push({t:'Overcast — Good', c:'good'});
+  if (cloud > 85) tags.push({t:'Heavy Overcast', c:''});
+
+  if (tags.length) {
+    html += `<div class="fish-report-section">
+      <div class="fish-report-tags">${tags.map(t=>`<span class="fish-tag ${t.c}">${t.t}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  reportEl.innerHTML = html;
 }
-function loadFishingWeather() {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${CFG.fishLat}&longitude=${CFG.fishLon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,pressure_msl,cloud_cover,precipitation&daily=temperature_2m_max,temperature_2m_min&temperature_unit=celsius&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York&forecast_days=1`;
-  fetch(url).then(r=>r.json()).then(d=>{
-    computeFishing(d.current);
-    document.getElementById('fish-last-update').textContent = 'Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-  }).catch(()=>{ document.getElementById('fish-tip').textContent='⚠️ Could not load live conditions.'; });
+
+function getSeasonalTip(month, tempF, loc) {
+  // Detect if we're in a tropical/southern vs northern location
+  const isTropical = tempF > 72 && (month >= 4 && month <= 10);
+  const isCold = tempF < 50;
+
+  const tips = {
+    0: isCold ? `January: Cold-water species like perch and pickerel are active near ${loc}. Jig slowly on the bottom.`
+              : `January: Sheepshead and black drum active in warmer areas. Try fiddler crabs near structure.`,
+    1: isCold ? `February: Striped bass starting to show near ${loc}. Watch for baitfish schools.`
+              : `February: Redfish and trout active on warm afternoons. Seek shallow flats on sunny days.`,
+    2: `March: Pre-spawn feeding — fish are aggressive near ${loc}. Excellent topwater fishing at dawn.`,
+    3: `April: Spring migration in full swing. Multiple species active throughout the day near ${loc}.`,
+    4: `May: Peak spring bite. Fish are post-spawn and hungry. Excellent all-day action near ${loc}.`,
+    5: isTropical ? `June: Tarpon and snook season peaks. Dawn and dusk key times near ${loc}.`
+                 : `June: Summer patterns setting in. Early morning topwater bite near ${loc}.`,
+    6: `July: Heat slows the midday bite. Dawn and dusk are prime. Deep structure during the day near ${loc}.`,
+    7: `August: Dog days — early morning bite is critical. Live bait outperforms near ${loc}.`,
+    8: `September: Fall transition beginning. Bait schools form, predators follow near ${loc}. Great month overall.`,
+    9: `October: Excellent fall feeding frenzy near ${loc}. Stripers and bluefish (north) or redfish (south) very active.`,
+    10:`November: Pre-winter feeding. Fish eating heavily to prepare. Great conditions near ${loc}.`,
+    11:`December: Winter patterns. Deeper fish, slower presentations near ${loc}. Target sunny afternoon tides.`,
+  };
+  return tips[month] || '';
 }
+
+// ═══════════════════════════════════════════
+//  TIDES
+// ═══════════════════════════════════════════
 function loadTides() {
-  const today=new Date(),tomorrow=new Date(today); tomorrow.setDate(today.getDate()+1);
+  const today=new Date(), tomorrow=new Date(today); tomorrow.setDate(today.getDate()+1);
   const fmt=d=>`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
   const url=`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=web_services&begin_date=${fmt(today)}&end_date=${fmt(tomorrow)}&datum=MLLW&station=${CFG.tideStation}&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
   fetch(url).then(r=>r.json()).then(d=>{
-    if(!d.predictions?.length){document.getElementById('tide-list').innerHTML="<div style='color:var(--text-muted);font-size:12px'>Tide data unavailable</div>";return;}
+    if(!d.predictions?.length){document.getElementById('tide-list').innerHTML="<div style='color:var(--text-muted);font-size:12px'>Tide data unavailable<br><small>Check tide station ID in Settings</small></div>";return;}
     const now=new Date();
     const upcoming=d.predictions.filter(p=>new Date(p.t)>now).slice(0,4);
     const display=upcoming.length?upcoming:d.predictions.slice(0,4);
     document.getElementById('tide-list').innerHTML=display.map(p=>{
-      const dt=new Date(p.t);let h=dt.getHours(),m=dt.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;
-      return `<div class="tide-item"><div class="tide-left"><span class="tide-icon">${p.type==='H'?'📈':'📉'}</span><span class="tide-type">${p.type==='H'?'High Tide':'Low Tide'}</span></div><span class="tide-time">${h}:${String(m).padStart(2,'0')} ${ap}</span><span class="tide-ht">${parseFloat(p.v).toFixed(1)} ft</span></div>`;
+      const dt=new Date(p.t); let h=dt.getHours(),m=dt.getMinutes();
+      const ap=h>=12?'PM':'AM'; h=h%12||12;
+      const isNext = display.indexOf(p)===0;
+      return `<div class="tide-item" style="${isNext?'border:1px solid rgba(232,201,122,0.4)':''}">
+        <div class="tide-left"><span class="tide-icon">${p.type==='H'?'📈':'📉'}</span><span class="tide-type">${p.type==='H'?'High':'Low'} Tide${isNext?' <span style="font-size:9px;color:var(--accent)">▶ NEXT</span>':''}</span></div>
+        <span class="tide-time">${h}:${String(m).padStart(2,'0')} ${ap}</span>
+        <span class="tide-ht">${parseFloat(p.v).toFixed(1)} ft</span>
+      </div>`;
     }).join('');
   }).catch(()=>{document.getElementById('tide-list').innerHTML="<div style='color:var(--text-muted);font-size:12px'>Could not load tides</div>";});
 }
-// iCAL (unchanged from original)
-let allEvents=[],viewMonth=new Date().getMonth(),viewYear=new Date().getFullYear();
-function parseIcal(text){ /* original parseIcal function - kept exactly as you had */ 
+
+// ═══════════════════════════════════════════
+//  ICAL CALENDAR
+// ═══════════════════════════════════════════
+let allEvents=[], viewMonth=new Date().getMonth(), viewYear=new Date().getFullYear();
+function parseIcal(text){
   text=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n[ \t]/g,'');
   const events=[];let inEvent=false,cur=null;
   text.split('\n').forEach(line=>{
@@ -625,32 +993,25 @@ function parseIcal(text){ /* original parseIcal function - kept exactly as you h
   });
   return events;
 }
-function parseIcalDt(val){ /* original */ 
+function parseIcalDt(val){
   val=val.replace(/^VALUE=DATE:/,'');
   if(/^\d{8}$/.test(val))return{date:`${val.slice(0,4)}-${val.slice(4,6)}-${val.slice(6,8)}`,allDay:true};
   const iso=`${val.slice(0,4)}-${val.slice(4,6)}-${val.slice(6,8)}T${val.slice(9,11)}:${val.slice(11,13)}:${val.slice(13,15)}${val.endsWith('Z')?'Z':''}`;
   return{dateTime:iso,allDay:false};
 }
-function getEventDays(ev){ /* original */ 
+function getEventDays(ev){
   const start=ev.dtstart,end=ev.dtend;if(!start)return[];
   const startStr=start.date||(start.dateTime||'').slice(0,10);
   let endStr=end?(end.date||(end.dateTime||'').slice(0,10)):startStr;
   if(start.allDay&&end?.allDay){const ed=new Date(endStr+'T12:00:00');ed.setDate(ed.getDate()-1);endStr=ed.toISOString().slice(0,10);}
   const days=[];let cur=new Date(startStr+'T12:00:00');const endD=new Date(endStr+'T12:00:00');
   while(cur<=endD){days.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
-  if(days.length>1)ev.isMultiday=true;
-  return days;
+  if(days.length>1)ev.isMultiday=true;return days;
 }
-async function fetchIcalWithFallback(icalUrl){ /* original */ 
+async function fetchIcalWithFallback(icalUrl){
   for(const makeProxy of CORS_PROXIES){
-    try{
-      const r=await fetch(makeProxy(icalUrl),{cache:'no-cache'});
-      if(!r.ok)continue;
-      const text=await r.text();
-      if(text.includes('BEGIN:VCALENDAR'))return text;
-    }catch(e){}
-  }
-  return null;
+    try{const r=await fetch(makeProxy(icalUrl),{cache:'no-cache'});if(!r.ok)continue;const text=await r.text();if(text.includes('BEGIN:VCALENDAR'))return text;}catch(e){}
+  }return null;
 }
 async function loadCalendar(){
   const statusEl=document.getElementById('cal-status');
@@ -662,13 +1023,12 @@ async function loadCalendar(){
     statusEl.textContent=`✅ ${allEvents.length} events · ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
     statusEl.style.color='var(--good)';
   }else{
-    statusEl.textContent='⚠️ Sync failed — check iCal URL in Settings';
-    statusEl.style.color='var(--bad)';
+    statusEl.textContent='⚠️ Sync failed';statusEl.style.color='var(--bad)';
     renderCalendar();renderUpcoming();
   }
 }
 function changeViewMonth(dir){viewMonth+=dir;if(viewMonth>11){viewMonth=0;viewYear++;}if(viewMonth<0){viewMonth=11;viewYear--;}renderCalendar();}
-function renderCalendar(){ /* original full renderCalendar */ 
+function renderCalendar(){
   const now=new Date();
   const mns=['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('cal-month').textContent=`${mns[viewMonth]} ${viewYear}`;document.getElementById('cal-month').classList.remove('loading');
@@ -689,7 +1049,7 @@ function renderCalendar(){ /* original full renderCalendar */
   for(let i=1;i<=rem;i++)html+=`<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
   document.getElementById('cal-grid').innerHTML=html;
 }
-function renderUpcoming(){ /* original */ 
+function renderUpcoming(){
   const now=new Date(),todayStr=now.toISOString().slice(0,10);
   const upcoming=allEvents
     .filter(ev=>{const ds=ev.dtstart?.date||(ev.dtstart?.dateTime||'').slice(0,10);return ds>=todayStr;})
@@ -705,11 +1065,14 @@ function renderUpcoming(){ /* original */
     return `<div class="upcoming-item"><div class="upcoming-date">${label}</div><div class="upcoming-title">${ev.summary||'(No title)'}</div></div>`;
   }).join('');
 }
-// INIT
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
 viewMonth=new Date().getMonth(); viewYear=new Date().getFullYear();
 loadWeather(); loadFishingWeather(); loadTides(); loadCalendar(); startFishRefreshCycle();
-setInterval(loadCalendar, 60*1000);
-setInterval(()=>{loadWeather();loadTides();}, 10*60*1000);
+setInterval(loadCalendar, 2*60*1000);
+setInterval(()=>{ loadWeather(); loadTides(); }, 10*60*1000);
 </script>
 </body>
 </html>
