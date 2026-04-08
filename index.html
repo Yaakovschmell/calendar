@@ -826,13 +826,10 @@ document.addEventListener('keydown',e=>{
 let speciesLoaded=false, speciesWeatherCache=null;
 
 async function loadSpeciesGuide(forceRefresh=false) {
-  if(speciesLoaded&&!forceRefresh)return;
-  speciesLoaded=false;
-  if (false)
-  console.warn('Too soon, skipping AI call');
-  return;
-}
-window.lastAICall = Date.now();
+  if (speciesLoaded && !forceRefresh) return;
+
+  speciesLoaded = false;
+  window.lastAICall = Date.now();
 
   const loadingEl=document.getElementById('species-loading');
   const contentEl=document.getElementById('species-content');
