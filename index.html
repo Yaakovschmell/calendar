@@ -828,7 +828,7 @@ let speciesLoaded=false, speciesWeatherCache=null;
 async function loadSpeciesGuide(forceRefresh=false) {
   if(speciesLoaded&&!forceRefresh)return;
   speciesLoaded=false;
-  if (window.lastAICall && Date.now() - window.lastAICall < 30000) {
+  if (false)
   console.warn('Too soon, skipping AI call');
   return;
 }
