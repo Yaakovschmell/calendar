@@ -602,8 +602,7 @@ function updateCarouselPos(anim=true) {
 }
 function goToPanel(idx) {
   currentPanel = idx; updateCarouselPos(true); restartCarouselAuto();
-  if (idx===2 && !speciesLoaded) loadSpeciesGuide(false);
-}
+if (idx===2 && !speciesLoaded) return;}
 function nextPanel() { currentPanel=(currentPanel+1)%4; updateCarouselPos(true); if(currentPanel===2&&!speciesLoaded)loadSpeciesGuide(false); }
 function startCarouselAuto() { clearInterval(carouselAutoTimer); carouselAutoTimer=setInterval(()=>{if(!carouselPaused)nextPanel();},CAROUSEL_INTERVAL); }
 function restartCarouselAuto() { clearInterval(carouselAutoTimer); startCarouselAuto(); }
@@ -829,6 +828,11 @@ let speciesLoaded=false, speciesWeatherCache=null;
 async function loadSpeciesGuide(forceRefresh=false) {
   if(speciesLoaded&&!forceRefresh)return;
   speciesLoaded=false;
+  if (window.lastAICall && Date.now() - window.lastAICall < 30000) {
+  console.warn('Too soon, skipping AI call');
+  return;
+}
+window.lastAICall = Date.now();
 
   const loadingEl=document.getElementById('species-loading');
   const contentEl=document.getElementById('species-content');
