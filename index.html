@@ -466,6 +466,17 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
     </div>
 
     <div class="s-section">
+      <div class="s-section-title">🤖 AI Species Guide</div>
+      <div class="s-grid">
+        <div class="s-field full">
+          <label>Gemini API Key</label>
+          <input id="s-gemini-key" type="password" placeholder="Paste your Gemini API key here">
+          <div class="s-note">Free from <strong>aistudio.google.com/apikey</strong> — required for AI species recommendations.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-section">
       <div class="s-section-title">📅 Google Calendar</div>
       <div class="s-grid">
         <div class="s-field full">
@@ -556,6 +567,7 @@ const DEFAULTS = {
   tideStation:'8722669',
   icalUrl:DEFAULT_ICAL, bg:DEFAULT_BG,
   accentColor:'#e8c97a', timeFmt:'12', tempUnit:'F',
+  geminiKey:'',
 };
 function getCFG() {
   try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('fishDash11')||'{}')); }
@@ -758,6 +770,7 @@ function openSettings() {
   document.getElementById('s-bg').value=CFG.bg===DEFAULT_BG?'':CFG.bg;
   document.getElementById('s-timefmt').value=CFG.timeFmt;
   document.getElementById('s-tempunit').value=CFG.tempUnit;
+  document.getElementById('s-gemini-key').value=CFG.geminiKey||'';
   document.querySelectorAll('.color-swatch').forEach(el=>el.classList.toggle('active',el.dataset.color===CFG.accentColor));
   document.getElementById('geo-weather-status').textContent='';
   document.getElementById('geo-fish-status').textContent='';
@@ -782,6 +795,7 @@ function saveSettings(){
   const bgIn=document.getElementById('s-bg').value.trim(); CFG.bg=bgIn||DEFAULT_BG;
   CFG.timeFmt=document.getElementById('s-timefmt').value;
   CFG.tempUnit=document.getElementById('s-tempunit').value;
+  CFG.geminiKey=document.getElementById('s-gemini-key').value.trim();
   const ac=document.querySelector('.color-swatch.active'); if(ac)CFG.accentColor=ac.dataset.color;
   localStorage.setItem('fishDash11',JSON.stringify(CFG));
   closeSettings(); applySettings();
@@ -864,18 +878,17 @@ Return ONLY valid JSON (no markdown, no explanation):
 }`;
 
   try {
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    if(!CFG.geminiKey)throw new Error('No API key');
+    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${CFG.geminiKey}`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{role:'user',content:prompt}]
+        contents:[{parts:[{text:prompt}]}]
       })
     });
     if(!resp.ok)throw new Error('HTTP '+resp.status);
     const data=await resp.json();
-    const raw=data.content.map(b=>b.text||'').join('');
+    const raw=data.candidates[0].content.parts.map(p=>p.text||'').join('');
     // Strip any markdown fences
     const cleaned=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
     const parsed=JSON.parse(cleaned);
@@ -892,7 +905,7 @@ Return ONLY valid JSON (no markdown, no explanation):
     speciesLoaded=true;
     aiText.textContent='RETRY';
     errorEl.style.display='block';
-    errorEl.textContent='⚠️ AI unavailable (API key not configured). Showing seasonal data. Tap RETRY anytime.';
+    errorEl.textContent=CFG.geminiKey?'⚠️ AI error — tap RETRY or check your API key in Settings (S).':'⚠️ Add your free Gemini API key in Settings (S) to enable AI species guide. Tap RETRY after.';
     locSub.textContent=location+' · '+MONTHS[month]+' (offline)';
   }
 }
