@@ -532,7 +532,8 @@ const CORS_PROXIES = [
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   u => `https://thingproxy.freeboard.io/fetch/${u}`,
 ];
-
+const SPECIES_CACHE_KEY = 'speciesCache_v2';
+const SPECIES_CACHE_TIME = 24 * 60 * 60 * 1000; // 24 hours
 const SPECIES_DB = {
   florida_south: { species:'Snook, tarpon, redfish, flounder, cobia', methods:'Live pilchards, DOA shrimp, gold spoons, soft plastics' },
   florida_keys:  { species:'Tarpon, bonefish, permit, snook, barracuda', methods:'Crabs, shrimp flies, live bait, streamers' },
@@ -636,123 +637,124 @@ function speciesAutoLoad() {
 
 /** The actual fetch — lock is already set by caller; this just runs the request. */
 async function _loadSpeciesGuide() {
-  // Defensive check — should never be false here, but guard anyway
-  if (!_speciesIsLoading) { _speciesIsLoading = true; }
+ const cached = localStorage.getItem(SPECIES_CACHE_KEY);
 
+if (cached) {
+  const parsed = JSON.parse(cached);
+  if (Date.now() - parsed.timestamp < SPECIES_CACHE_TIME) {
+    renderSpecies(parsed.data.species);
+    return;
+  }
+}
   const loadingEl  = document.getElementById('species-loading');
-  const contentEl  = document.getElementById('species-content');
   const errorEl    = document.getElementById('species-error');
   const aiText     = document.getElementById('species-ai-text');
   const locSub     = document.getElementById('species-location-sub');
 
-  const now   = new Date(), month = now.getMonth(), hour = now.getHours();
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const speciesList = CFG.fishSpecies || 'Snook, tarpon, redfish, flounder';
-  const location    = CFG.fishName;
+  const nowDate = new Date();
+  const month = nowDate.getMonth();
+  const hour = nowDate.getHours();
 
-  locSub.textContent = location + ' — AI analysis in progress…';
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const speciesList = CFG.fishSpecies || 'Snook, tarpon, redfish, flounder';
+  const location = CFG.fishName;
+
+  // ✅ CACHE CHECK (this stops API spam)
+  const cached = localStorage.getItem(SPECIES_CACHE_KEY);
+
+  if (cached) {
+    try {
+      const parsedCache = JSON.parse(cached);
+
+      if (Date.now() - parsedCache.timestamp < SPECIES_CACHE_TIME) {
+        console.log("Using cached AI data");
+
+        renderSpecies(parsedCache.data.species);
+        _speciesHasContent = true;
+
+        aiText.textContent = 'CACHED';
+        locSub.textContent = location + ' · ' + MONTHS[month];
+
+        _speciesIsLoading = false;
+        return;
+      }
+    } catch(e) {}
+  }
+
+  locSub.textContent = location + ' — AI analysis…';
   loadingEl.style.display = 'flex';
-  errorEl.style.display   = 'none';
+  errorEl.style.display = 'none';
   aiText.textContent = 'LOADING…';
 
-  let weatherCtx = '';
-  if (speciesWeatherCache) {
-    const c = speciesWeatherCache;
-    const tempF = Math.round(c.temperature_2m * 9/5 + 32);
-    const wmoDesc = {0:'clear',1:'mostly clear',2:'partly cloudy',3:'overcast',61:'raining',63:'raining',65:'heavy rain',80:'showery',81:'rainy',82:'heavy showers',95:'thunderstorm'};
-    weatherCtx = `Current weather: ${tempF}°F, ${wmoDesc[c.weather_code]||'cloudy'}, wind ${Math.round(c.wind_speed_10m)} mph, pressure ${Math.round(c.pressure_msl)} hPa, ${c.cloud_cover}% clouds, ${(c.precipitation||0).toFixed(2)}" precip.`;
-  }
-  const moonInfo = computeMoon();
-
-  const prompt = `You are an expert fishing guide at ${location}. Today is ${MONTHS[month]}, time is ${hour}:00.
-${weatherCtx}
-Moon: ${moonInfo.name} (${moonInfo.illum}% lit).
-Species to report on: ${speciesList}.
-
-Return ONLY valid JSON (no markdown, no explanation):
-{
-  "species": [
-    {
-      "name": "Species Name",
-      "status": "peak OR good OR slow",
-      "summary": "2 specific sentences about catching this species RIGHT NOW at ${location} in ${MONTHS[month]} given these conditions",
-      "tactics": ["tactic 1", "tactic 2", "tactic 3"],
-      "bait": "best bait or lure right now",
-      "spot": "specific type of spot to target",
-      "time": "best time today"
-    }
-  ]
-}`;
+  const prompt = `Fishing conditions for ${location} in ${MONTHS[month]} at ${hour}:00.
+Species: ${speciesList}. Return ONLY JSON.`;
 
   try {
-    if (!CFG.geminiKey) throw new Error('No API key — add your Gemini key in Settings (S)');
+    if (!CFG.geminiKey) throw new Error("Missing API key");
 
     const resp = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${CFG.geminiKey}`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }]
+          contents: [{ role: "user", parts: [{ text: prompt }] }]
         })
       }
     );
 
-    // Handle rate-limit and other HTTP errors explicitly
-    if (resp.status === 429) {
-      throw new Error('Rate limited (429) — please wait a minute and try again');
-    }
-    if (!resp.ok) {
-      throw new Error(`API error ${resp.status}`);
-    }
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
 
     const data = await resp.json();
-    let text = '';
-    try { text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''; } catch(e) {}
-    if (!text) throw new Error('Empty AI response');
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) throw new Error("Empty response");
 
     let parsed;
+
     try {
       parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-    } catch(e) {
-      console.warn('[species] JSON parse failed, using fallback structure');
+    } catch {
       parsed = {
-        species: (CFG.fishSpecies || '').split(',').map(s => ({
-          name: s.trim(), status: 'good',
+        species: speciesList.split(',').map(s => ({
+          name: s.trim(),
+          status: 'good',
           summary: text.substring(0, 120),
-          tactics: ['live bait', 'structure', 'slow retrieve'],
-          bait: 'live bait', spot: 'near structure', time: 'morning/evening'
+          tactics: ['live bait', 'structure'],
+          bait: 'live bait',
+          spot: 'structure',
+          time: 'morning/evening'
         }))
       };
     }
 
     renderSpecies(parsed.species);
+
+    // ✅ SAVE CACHE (this is the real fix)
+    localStorage.setItem(SPECIES_CACHE_KEY, JSON.stringify({
+      timestamp: Date.now(),
+      data: parsed
+    }));
+
     _speciesHasContent = true;
+
     aiText.textContent = 'UPDATED';
-    errorEl.style.display = 'none';
-    document.getElementById('species-last-update').textContent = 'AI guide updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
     locSub.textContent = location + ' · ' + MONTHS[month];
 
-  } catch(e) {
-    console.warn('[species] Error:', e.message);
-    loadingEl.style.display = 'none';
-    // On 429, set a long backoff so we don't hammer the API
-    if (e.message && e.message.includes('429')) {
-      _speciesNextAllowed = Date.now() + SPECIES_RATELIMIT_COOLDOWN;
-      console.log(`[species] Rate limited — backoff until ${new Date(_speciesNextAllowed).toLocaleTimeString()}`);
+  } catch (e) {
+    console.error("AI ERROR:", e);
+
+    if (!_speciesHasContent) {
+      renderSpeciesFallback();
     }
-    // Show offline fallback so panel isn't empty
-    if (!_speciesHasContent) renderSpeciesFallback();
+
     aiText.textContent = 'RETRY';
     errorEl.style.display = 'block';
-    errorEl.textContent = CFG.geminiKey
-      ? `⚠️ ${e.message} — tap RETRY to try again.`
-      : '⚠️ Add your free Gemini API key in Settings (S) to enable AI species guide.';
-    locSub.textContent = location + ' · ' + MONTHS[month] + ' (offline)';
+    errorEl.textContent = e.message;
+
   } finally {
-    // Always release the lock and stamp completion time
     _speciesIsLoading = false;
-    _speciesLastDone  = Date.now();
     loadingEl.style.display = 'none';
   }
 }
