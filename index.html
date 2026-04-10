@@ -582,10 +582,12 @@ let CFG = getCFG();
 //      "already loaded" check but still respects the lock
 //      and cooldown to prevent double-taps.
 // ══════════════════════════════════════════
-const SPECIES_COOLDOWN_MS = 15000; // 15 s between completions
+const SPECIES_COOLDOWN_MS      = 20000;  // 20s minimum between any completions
+const SPECIES_RATELIMIT_COOLDOWN = 90000; // 90s after a 429 before retrying
 let _speciesIsLoading  = false;   // true while fetch is in flight
 let _speciesLastDone   = 0;       // timestamp of last successful/failed completion
 let _speciesHasContent = false;   // true once content has been rendered at least once
+let _speciesNextAllowed = 0;      // absolute timestamp before which no new call is allowed
 
 /** Called by manual REFRESH button — forces a new call if not locked/throttled */
 function speciesManualRefresh() {
@@ -594,16 +596,19 @@ function speciesManualRefresh() {
     console.log('[species] Ignored manual refresh — already loading');
     return;
   }
-  if (now - _speciesLastDone < SPECIES_COOLDOWN_MS) {
-    const wait = Math.ceil((SPECIES_COOLDOWN_MS - (now - _speciesLastDone)) / 1000);
+  const waitUntil = Math.max(_speciesLastDone + SPECIES_COOLDOWN_MS, _speciesNextAllowed);
+  if (now < waitUntil) {
+    const wait = Math.ceil((waitUntil - now) / 1000);
     console.log(`[species] Ignored manual refresh — cooldown (${wait}s left)`);
     document.getElementById('species-ai-text').textContent = `WAIT ${wait}s`;
     setTimeout(() => {
       const el = document.getElementById('species-ai-text');
       if (el) el.textContent = 'REFRESH';
-    }, (SPECIES_COOLDOWN_MS - (now - _speciesLastDone)));
+    }, waitUntil - now);
     return;
   }
+  // Claim the lock SYNCHRONOUSLY before any async work
+  _speciesIsLoading = true;
   _loadSpeciesGuide();
 }
 
@@ -615,20 +620,24 @@ function speciesAutoLoad() {
     console.log('[species] Auto-load skipped — already loading');
     return;
   }
-  if (_speciesHasContent && now - _speciesLastDone < SPECIES_COOLDOWN_MS) {
-    console.log('[species] Auto-load skipped — content fresh');
+  const waitUntil = Math.max(_speciesLastDone + SPECIES_COOLDOWN_MS, _speciesNextAllowed);
+  if (_speciesHasContent && now < waitUntil) {
+    console.log('[species] Auto-load skipped — content fresh or in backoff');
     return;
   }
-  // If we have content but it's stale (cooldown elapsed), refresh.
-  // If we have no content at all, always load.
+  if (!_speciesHasContent && now < _speciesNextAllowed) {
+    console.log('[species] Auto-load skipped — in rate-limit backoff');
+    return;
+  }
+  // Claim the lock SYNCHRONOUSLY before any async work
+  _speciesIsLoading = true;
   _loadSpeciesGuide();
 }
 
-/** The actual fetch — never call directly, always go through the two
- *  public functions above so the lock/cooldown logic is enforced. */
+/** The actual fetch — lock is already set by caller; this just runs the request. */
 async function _loadSpeciesGuide() {
-  if (_speciesIsLoading) return; // double-check inside
-  _speciesIsLoading = true;
+  // Defensive check — should never be false here, but guard anyway
+  if (!_speciesIsLoading) { _speciesIsLoading = true; }
 
   const loadingEl  = document.getElementById('species-loading');
   const contentEl  = document.getElementById('species-content');
@@ -727,6 +736,11 @@ Return ONLY valid JSON (no markdown, no explanation):
   } catch(e) {
     console.warn('[species] Error:', e.message);
     loadingEl.style.display = 'none';
+    // On 429, set a long backoff so we don't hammer the API
+    if (e.message && e.message.includes('429')) {
+      _speciesNextAllowed = Date.now() + SPECIES_RATELIMIT_COOLDOWN;
+      console.log(`[species] Rate limited — backoff until ${new Date(_speciesNextAllowed).toLocaleTimeString()}`);
+    }
     // Show offline fallback so panel isn't empty
     if (!_speciesHasContent) renderSpeciesFallback();
     aiText.textContent = 'RETRY';
@@ -976,6 +990,7 @@ function saveSettings() {
   _speciesHasContent = false;
   _speciesIsLoading  = false;
   _speciesLastDone   = 0;
+  _speciesNextAllowed = 0;
   // If the species panel is currently visible, load it now
   if (currentPanel === 2) speciesAutoLoad();
 }
@@ -987,6 +1002,7 @@ function resetSettings() {
   _speciesHasContent = false;
   _speciesIsLoading  = false;
   _speciesLastDone   = 0;
+  _speciesNextAllowed = 0;
   openSettings();
   applySettings();
 }
