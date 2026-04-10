@@ -19,7 +19,6 @@
   --radius: 14px;
   --font-serif: 'Cormorant Garamond', Georgia, serif;
   --font-sans: 'Jost', sans-serif;
-  /* Stronger text shadow so text pops over background */
   --shadow-text: 0 1px 20px rgba(0,0,0,1), 0 2px 6px rgba(0,0,0,0.95), 0 0 30px rgba(0,0,0,0.6);
   --shadow-card: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07);
 }
@@ -78,7 +77,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 #carousel-track { display:flex; flex-direction:column; transition:transform 0.7s cubic-bezier(0.4,0,0.2,1); will-change:transform; }
 .carousel-panel { flex-shrink:0; padding:0 12px 14px 16px; display:flex; flex-direction:column; gap:10px; overflow:hidden; }
 
-/* ── CARDS — keep existing transparency, just improve text ── */
 .wcard {
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.14);
@@ -106,13 +104,11 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 .w-stat-label { font-size:9px; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:1px; margin-bottom:3px; font-weight:500; }
 .w-stat-value { font-family:var(--font-serif); font-size:16px; color:#fff; font-weight:400; text-shadow:var(--shadow-text); }
 
-/* Hourly scroll — horizontal, shows full strip */
 #hourly-wrap { position:relative; margin-bottom:10px; }
 #hourly-scroll {
   display:flex; gap:5px;
   overflow-x:auto; overflow-y:hidden;
   padding-bottom:6px;
-  /* show scrollbar so user knows it scrolls */
   scrollbar-width:thin; scrollbar-color:rgba(232,201,122,0.4) rgba(0,0,0,0.2);
 }
 #hourly-scroll::-webkit-scrollbar { height:4px; }
@@ -319,7 +315,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
               <div class="w-stat"><div class="w-stat-label">Pressure</div><div class="w-stat-value" id="w-pres">--</div></div>
               <div class="w-stat"><div class="w-stat-label">Precip</div><div class="w-stat-value" id="w-rain">--</div></div>
             </div>
-            <!-- Hourly: scrollable horizontal strip with visible scrollbar -->
             <div id="hourly-scroll"></div>
             <div id="forecast-row" class="loading" style="min-height:50px"></div>
             <div id="sun-row">
@@ -466,17 +461,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
     </div>
 
     <div class="s-section">
-      <div class="s-section-title">🤖 AI Species Guide</div>
-      <div class="s-grid">
-        <div class="s-field full">
-          <label>Gemini API Key</label>
-          <input id="s-gemini-key" type="password" placeholder="Paste your Gemini API key here">
-          <div class="s-note">Free from <strong>aistudio.google.com/apikey</strong> — required for AI species recommendations.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="s-section">
       <div class="s-section-title">📅 Google Calendar</div>
       <div class="s-grid">
         <div class="s-field full">
@@ -537,7 +521,6 @@ const CORS_PROXIES = [
   u => `https://thingproxy.freeboard.io/fetch/${u}`,
 ];
 
-// Species database keyed by region keywords
 const SPECIES_DB = {
   florida_south: { species:'Snook, tarpon, redfish, flounder, cobia', methods:'Live pilchards, DOA shrimp, gold spoons, soft plastics' },
   florida_keys:  { species:'Tarpon, bonefish, permit, snook, barracuda', methods:'Crabs, shrimp flies, live bait, streamers' },
@@ -567,7 +550,6 @@ const DEFAULTS = {
   tideStation:'8722669',
   icalUrl:DEFAULT_ICAL, bg:DEFAULT_BG,
   accentColor:'#e8c97a', timeFmt:'12', tempUnit:'F',
-  geminiKey:'',
 };
 function getCFG() {
   try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('fishDash11')||'{}')); }
@@ -602,7 +584,8 @@ function updateCarouselPos(anim=true) {
 }
 function goToPanel(idx) {
   currentPanel = idx; updateCarouselPos(true); restartCarouselAuto();
-if (idx===2 && !speciesLoaded) return;}
+  if (idx===2 && !speciesLoaded) loadSpeciesGuide(false);
+}
 function nextPanel() { currentPanel=(currentPanel+1)%4; updateCarouselPos(true); if(currentPanel===2&&!speciesLoaded)loadSpeciesGuide(false); }
 function startCarouselAuto() { clearInterval(carouselAutoTimer); carouselAutoTimer=setInterval(()=>{if(!carouselPaused)nextPanel();},CAROUSEL_INTERVAL); }
 function restartCarouselAuto() { clearInterval(carouselAutoTimer); startCarouselAuto(); }
@@ -679,14 +662,11 @@ async function pickAC(type, label, lat, lon, inputId, listId) {
     st.textContent='📍 Finding tide station & generating nearby spots…';
     st.style.color='var(--warn)';
 
-    // Auto-suggest species based on location
     const speciesInfo=guessSpecies(lat,lon,label);
     document.getElementById('s-fish-species').value=speciesInfo.species;
 
-    // Generate nearby spots dynamically
     generateNearbySpots(lat, lon, label);
 
-    // Find nearest NOAA tide station
     const station=await findNearestTideStation(lat,lon);
     if(station){
       document.getElementById('s-tide-station').value=station.id;
@@ -704,24 +684,13 @@ async function generateNearbySpots(lat, lon, centerName) {
   presetsEl.innerHTML='<span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">Searching nearby spots…</span>';
 
   try {
-    // Search for fishing spots within ~30km radius
-    const queries=[
-      `${centerName.split(',')[0]} beach`,
-      `inlet near ${centerName.split(',')[0]}`,
-      `${centerName.split(',')[0]} pier`,
-    ];
-    const regionName=centerName.split(',').slice(1).join(',').trim()||'';
-    const searchQuery=`fishing ${centerName.split(',')[0]} ${regionName}`;
-
-    // Use Open-Meteo geocoding to find nearby places
     const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(centerName.split(',')[0])}&count=10&language=en&format=json`);
     const d=await r.json();
 
     if(!d.results?.length){ presetsEl.innerHTML='<span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">No nearby spots found — enter manually</span>'; return; }
 
-    // Filter to within ~50km, exclude the exact same spot
     const nearby=d.results.filter(res=>{
-      const dist=Math.hypot(res.latitude-lat,res.longitude-lon)*111; // rough km
+      const dist=Math.hypot(res.latitude-lat,res.longitude-lon)*111;
       return dist>0.5&&dist<60;
     }).slice(0,6);
 
@@ -769,7 +738,6 @@ function openSettings() {
   document.getElementById('s-bg').value=CFG.bg===DEFAULT_BG?'':CFG.bg;
   document.getElementById('s-timefmt').value=CFG.timeFmt;
   document.getElementById('s-tempunit').value=CFG.tempUnit;
-  document.getElementById('s-gemini-key').value=CFG.geminiKey||'';
   document.querySelectorAll('.color-swatch').forEach(el=>el.classList.toggle('active',el.dataset.color===CFG.accentColor));
   document.getElementById('geo-weather-status').textContent='';
   document.getElementById('geo-fish-status').textContent='';
@@ -794,7 +762,6 @@ function saveSettings(){
   const bgIn=document.getElementById('s-bg').value.trim(); CFG.bg=bgIn||DEFAULT_BG;
   CFG.timeFmt=document.getElementById('s-timefmt').value;
   CFG.tempUnit=document.getElementById('s-tempunit').value;
-  CFG.geminiKey=document.getElementById('s-gemini-key').value.trim();
   const ac=document.querySelector('.color-swatch.active'); if(ac)CFG.accentColor=ac.dataset.color;
   localStorage.setItem('fishDash11',JSON.stringify(CFG));
   closeSettings(); applySettings();
@@ -821,15 +788,13 @@ document.addEventListener('keydown',e=>{
 });
 
 // ══════════════════════════════════════════
-//  AI SPECIES GUIDE
+//  AI SPECIES GUIDE  — FIXED MODEL STRING
 // ══════════════════════════════════════════
 let speciesLoaded=false, speciesWeatherCache=null;
 
 async function loadSpeciesGuide(forceRefresh=false) {
-  if (speciesLoaded && !forceRefresh) return;
-
-  speciesLoaded = false;
-  window.lastAICall = Date.now();
+  if(speciesLoaded&&!forceRefresh)return;
+  speciesLoaded=false;
 
   const loadingEl=document.getElementById('species-loading');
   const contentEl=document.getElementById('species-content');
@@ -879,44 +844,23 @@ Return ONLY valid JSON (no markdown, no explanation):
 }`;
 
   try {
-    if(!CFG.geminiKey)throw new Error('No API key');
-    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${CFG.geminiKey}`,{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-  contents: [{ parts: [{ text: prompt }] }]
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',  // ← FIXED: valid model string
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
       })
     });
-    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    if(!resp.ok){
+      const errBody=await resp.text();
+      throw new Error(`HTTP ${resp.status}: ${errBody}`);
+    }
     const data=await resp.json();
-   let text = '';
-
-try {
-  text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-} catch (e) {}
-
-if (!text) throw new Error('No AI response');
-
-let parsed;
-
-try {
-  const cleaned = text.replace(/```json|```/g, '').trim();
-  parsed = JSON.parse(cleaned);
-} catch (e) {
-  console.warn('Bad JSON from AI');
-
-  parsed = {
-    species: (CFG.fishSpecies || '').split(',').map(s => ({
-      name: s.trim(),
-      status: 'good',
-      summary: text.substring(0, 120),
-      tactics: ['live bait', 'structure', 'slow retrieve'],
-      bait: 'live bait',
-      spot: 'near structure',
-      time: 'morning/evening'
-    }))
-  };
-}
+    const raw=data.content.map(b=>b.text||'').join('');
+    const cleaned=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    const parsed=JSON.parse(cleaned);
     renderSpecies(parsed.species);
     speciesLoaded=true;
     aiText.textContent='UPDATED';
@@ -925,12 +869,11 @@ try {
   } catch(e) {
     console.warn('AI species error:',e);
     loadingEl.style.display='none';
-    // Show helpful fallback instead of just an error
     renderSpeciesFallback();
     speciesLoaded=true;
     aiText.textContent='RETRY';
     errorEl.style.display='block';
-    errorEl.textContent=CFG.geminiKey?'⚠️ AI error — tap RETRY or check your API key in Settings (S).':'⚠️ Add your free Gemini API key in Settings (S) to enable AI species guide. Tap RETRY after.';
+    errorEl.textContent='⚠️ AI unavailable. Showing seasonal data. Tap RETRY anytime.';
     locSub.textContent=location+' · '+MONTHS[month]+' (offline)';
   }
 }
@@ -1000,7 +943,7 @@ function updateClock(){
 setInterval(updateClock,500);updateClock();
 
 // ══════════════════════════════════════════
-//  WMO CODES (complete)
+//  WMO CODES
 // ══════════════════════════════════════════
 const WMO_ICONS={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',56:'🌧',57:'🌧',61:'🌧',63:'🌧',65:'🌧',66:'🌧',67:'🌧',71:'🌨',73:'🌨',75:'❄️',77:'🌨',80:'🌦',81:'🌧',82:'⛈',85:'🌨',86:'❄️',95:'⛈',96:'⛈',99:'⛈'};
 const WMO_DESC={0:'Clear skies',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',56:'Freezing drizzle',57:'Heavy freezing drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Heavy freezing rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Light showers',81:'Rain showers',82:'Heavy showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Heavy thunderstorm'};
@@ -1025,7 +968,6 @@ function loadWeather(){
     document.getElementById('w-pres').textContent=Math.round(c.pressure_msl)+' hPa';
     document.getElementById('w-rain').textContent=(c.precipitation||0).toFixed(2)+'"';
 
-    // Hourly — scrollable, start from now
     const nowISO=new Date().toISOString().slice(0,13);
     const nowIdx=Math.max(0,hourly.time.findIndex(t=>t.startsWith(nowISO)));
     let hrHTML='';
@@ -1043,7 +985,6 @@ function loadWeather(){
     }
     document.getElementById('hourly-scroll').innerHTML=hrHTML;
 
-    // 5-day forecast
     let fcHTML='';
     for(let i=1;i<=5;i++){
       const parts=daily.time[i].split('-');
@@ -1290,7 +1231,6 @@ viewMonth=new Date().getMonth();viewYear=new Date().getFullYear();
 window.addEventListener('load',()=>{
   initCarousel();
   loadWeather();loadFishingWeather();loadTides();loadCalendar();startFishRefreshCycle();
-  // Load species guide after a short delay so weather data is available
   setTimeout(()=>loadSpeciesGuide(false),3500);
 });
 setInterval(loadCalendar,3*60*1000);
