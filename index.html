@@ -637,12 +637,24 @@ function speciesAutoLoad() {
 
 /** The actual fetch — lock is already set by caller; this just runs the request. */
 async function _loadSpeciesGuide() {
+  if (_speciesIsLoading) return;
+_speciesIsLoading = true;
+
+const LAST_CALL_KEY = 'speciesLastCall';
+const lastCall = localStorage.getItem(LAST_CALL_KEY);
+
+if (lastCall && Date.now() - lastCall < 60000) {
+  console.log("Skipping API call (cooldown)");
+  _speciesIsLoading = false;
+  return;
+}
  const cached = localStorage.getItem(SPECIES_CACHE_KEY);
 
 if (cached) {
   const parsed = JSON.parse(cached);
   if (Date.now() - parsed.timestamp < SPECIES_CACHE_TIME) {
     renderSpecies(parsed.data.species);
+    localStorage.setItem(LAST_CALL_KEY, Date.now());
     return;
   }
 }
