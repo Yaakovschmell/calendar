@@ -1,73 +1,1301 @@
-// ============================================================
-//  CLOUDFLARE WORKER — Anthropic API Proxy
-//  Deploy this at: https://workers.cloudflare.com (free)
-//
-//  SETUP STEPS:
-//  1. Go to https://workers.cloudflare.com and sign in (free)
-//  2. Click "Create Worker"
-//  3. Paste this entire file, replacing the default code
-//  4. Click "Save and Deploy"
-//  5. Go to Settings → Variables → Add variable:
-//       Name:  ANTHROPIC_API_KEY
-//       Value: your actual key from console.anthropic.com
-//     *** Check "Encrypt" so it stays secret ***
-//  6. Copy your worker URL (e.g. https://my-worker.yourname.workers.dev)
-//  7. Paste that URL into the dashboard Settings → AI Proxy URL
-// ============================================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fishing Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --border: rgba(255,255,255,0.13);
+  --text: #ffffff;
+  --text-dim: rgba(255,255,255,0.95);
+  --text-muted: rgba(255,255,255,0.65);
+  --accent: #e8c97a;
+  --good: #7adba0;
+  --warn: #e8c97a;
+  --bad: #f07a7a;
+  --radius: 14px;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Jost', sans-serif;
+  /* Stronger text shadow so text pops over background */
+  --shadow-text: 0 1px 20px rgba(0,0,0,1), 0 2px 6px rgba(0,0,0,0.95), 0 0 30px rgba(0,0,0,0.6);
+  --shadow-card: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--font-sans); color: var(--text); }
 
-export default {
-  async fetch(request, env) {
+#bg {
+  position: fixed; inset: 0; z-index: 0;
+  background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2400') center/cover no-repeat;
+  filter: brightness(0.90) saturate(1.1);
+  transition: opacity 1.4s ease;
+}
+#bg::after {
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(to right, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.08) 38%, transparent 65%);
+}
+#bg.fade { opacity: 0; }
 
-    // Allow CORS from any origin (your GitHub Pages site)
-    const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    };
+#app {
+  position: fixed; inset: 0; z-index: 10;
+  display: grid; grid-template-columns: 42% 58%;
+  height: 100vh; overflow: hidden;
+}
 
-    // Handle preflight
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders });
-    }
+/* ── LEFT COLUMN ── */
+#col-left { display:flex; flex-direction:column; height:100vh; overflow:hidden; }
 
-    if (request.method !== 'POST') {
-      return new Response('Method not allowed', { status: 405, headers: corsHeaders });
-    }
+#clock-block { flex-shrink:0; padding:16px 12px 10px 16px; }
+#clock-time {
+  font-family:var(--font-serif); font-size:clamp(50px,5.5vw,80px);
+  font-weight:300; line-height:0.88; color:#fff;
+  text-shadow: var(--shadow-text);
+  letter-spacing:-2px;
+}
+#clock-ampm { font-family:var(--font-sans); font-weight:300; color:var(--accent); letter-spacing:4px; margin-left:7px; vertical-align:super; font-size:0.21em; }
+#clock-sep { transition:opacity 0.1s; }
+#clock-date {
+  font-size:11px; font-weight:400; color:rgba(255,255,255,0.95);
+  margin-top:5px; letter-spacing:2.5px;
+  text-shadow: var(--shadow-text);
+  text-transform:uppercase;
+}
 
-    // Get the API key from Worker environment variable (set in dashboard)
-    const apiKey = env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API key not configured in Worker environment' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+/* ── CAROUSEL NAV ── */
+#carousel-nav {
+  flex-shrink:0; display:flex; align-items:center;
+  justify-content:center; gap:8px; padding:4px 16px 6px;
+}
+.c-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.3); cursor:pointer; transition:all 0.3s; border:none; outline:none; }
+.c-dot.active { background:var(--accent); transform:scale(1.5); }
+.c-dot:hover { background:rgba(255,255,255,0.6); }
+#carousel-label { font-size:9px; letter-spacing:2px; color:rgba(255,255,255,0.75); text-transform:uppercase; margin-left:10px; text-shadow:var(--shadow-text); font-weight:500; }
 
-    try {
-      const body = await request.json();
+/* ── CAROUSEL ── */
+#carousel-viewport { flex:1; overflow:hidden; position:relative; }
+#carousel-track { display:flex; flex-direction:column; transition:transform 0.7s cubic-bezier(0.4,0,0.2,1); will-change:transform; }
+.carousel-panel { flex-shrink:0; padding:0 12px 14px 16px; display:flex; flex-direction:column; gap:10px; overflow:hidden; }
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify(body),
-      });
+/* ── CARDS — keep existing transparency, just improve text ── */
+.wcard {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.14);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-radius: var(--radius);
+  padding: 14px 15px;
+  flex-shrink:0;
+  box-shadow: var(--shadow-card);
+}
+.wlabel {
+  font-size:9px; font-weight:600; letter-spacing:3px; color:var(--accent);
+  text-transform:uppercase; margin-bottom:10px;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.9);
+}
 
-      const data = await response.json();
+/* ── WEATHER ── */
+#weather-main-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+#weather-icon { font-size:40px; line-height:1; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8)); }
+#weather-temp { font-family:var(--font-serif); font-size:48px; font-weight:400; line-height:1; text-shadow:var(--shadow-text); }
+#weather-desc { font-size:13px; color:#fff; font-style:italic; font-weight:400; text-shadow:var(--shadow-text); }
+#weather-feels { font-size:11px; color:rgba(255,255,255,0.8); margin-top:3px; text-shadow:var(--shadow-text); font-weight:400; }
 
-      return new Response(JSON.stringify(data), {
-        status: response.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+.w-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:10px; }
+.w-stat { background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.12); border-radius:9px; padding:7px 9px; }
+.w-stat-label { font-size:9px; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:1px; margin-bottom:3px; font-weight:500; }
+.w-stat-value { font-family:var(--font-serif); font-size:16px; color:#fff; font-weight:400; text-shadow:var(--shadow-text); }
 
-    } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+/* Hourly scroll — horizontal, shows full strip */
+#hourly-wrap { position:relative; margin-bottom:10px; }
+#hourly-scroll {
+  display:flex; gap:5px;
+  overflow-x:auto; overflow-y:hidden;
+  padding-bottom:6px;
+  /* show scrollbar so user knows it scrolls */
+  scrollbar-width:thin; scrollbar-color:rgba(232,201,122,0.4) rgba(0,0,0,0.2);
+}
+#hourly-scroll::-webkit-scrollbar { height:4px; }
+#hourly-scroll::-webkit-scrollbar-track { background:rgba(0,0,0,0.2); border-radius:4px; }
+#hourly-scroll::-webkit-scrollbar-thumb { background:rgba(232,201,122,0.5); border-radius:4px; }
+.hr-item {
+  flex-shrink:0; min-width:52px;
+  background:rgba(0,0,0,0.28); border:1px solid rgba(255,255,255,0.1);
+  border-radius:9px; padding:7px 6px; text-align:center;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+}
+.hr-item.now { background:rgba(232,201,122,0.18); border-color:rgba(232,201,122,0.45); }
+.hr-time { font-size:9px; color:rgba(255,255,255,0.75); text-transform:uppercase; font-weight:500; }
+.hr-icon { font-size:14px; }
+.hr-temp { font-family:var(--font-serif); font-size:13px; color:#fff; font-weight:400; text-shadow:var(--shadow-text); }
+.hr-rain { font-size:8px; color:var(--accent); font-weight:500; }
+
+#forecast-row { display:flex; gap:6px; margin-bottom:10px; }
+.fc-day { flex:1; background:rgba(0,0,0,0.28); border:1px solid rgba(255,255,255,0.1); border-radius:9px; padding:7px 3px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:3px; }
+.fc-name { font-size:9px; color:rgba(255,255,255,0.75); text-transform:uppercase; letter-spacing:1px; font-weight:500; }
+.fc-icon { font-size:16px; }
+.fc-hi { font-family:var(--font-serif); font-size:13px; color:#fff; font-weight:400; text-shadow:var(--shadow-text); }
+.fc-lo { font-size:10px; color:rgba(255,255,255,0.65); }
+
+#sun-row { display:flex; gap:6px; margin-top:10px; }
+.sun-pill { flex:1; background:rgba(232,201,122,0.12); border:1px solid rgba(232,201,122,0.25); border-radius:9px; padding:7px 4px; text-align:center; }
+.sun-label { font-size:9px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; font-weight:500; }
+.sun-value { font-family:var(--font-serif); font-size:13px; color:#fff; margin-top:3px; font-weight:400; text-shadow:var(--shadow-text); }
+
+/* ── FISHING ── */
+.fish-header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+#fish-live-badge { display:flex; align-items:center; gap:4px; background:rgba(122,219,160,0.12); border:1px solid rgba(122,219,160,0.28); border-radius:20px; padding:3px 9px; cursor:pointer; transition:background 0.2s; }
+#fish-live-badge:hover { background:rgba(122,219,160,0.25); }
+.live-dot { width:6px; height:6px; background:var(--good); border-radius:50%; animation:livepulse 1.8s infinite; }
+@keyframes livepulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+#fish-refresh-text { font-size:9px; color:var(--good); letter-spacing:1px; font-weight:600; }
+#fish-location-display { font-size:12px; color:#fff; font-style:italic; font-weight:400; margin-bottom:8px; text-shadow:var(--shadow-text); }
+#fish-score-row { display:flex; align-items:center; gap:14px; margin-bottom:10px; }
+#fish-score { font-family:var(--font-serif); font-size:58px; font-weight:600; line-height:1; text-shadow:var(--shadow-text); }
+#fish-score-sub { font-size:10px; color:rgba(255,255,255,0.7); font-weight:400; }
+#fish-score-label { font-size:13px; color:#fff; margin-top:3px; font-weight:400; font-style:italic; text-shadow:var(--shadow-text); }
+.bar-row { margin-bottom:6px; }
+.bar-labels { display:flex; justify-content:space-between; font-size:10px; color:rgba(255,255,255,0.75); margin-bottom:3px; font-weight:400; }
+.bar-track { height:5px; background:rgba(255,255,255,0.15); border-radius:4px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:4px; transition:width 1.3s cubic-bezier(0.4,0,0.2,1); }
+#fish-report-block { margin-top:10px; border-top:1px solid rgba(255,255,255,0.12); padding-top:10px; }
+.fish-report-section { margin-bottom:12px; }
+.fish-report-title { font-size:9px; letter-spacing:2px; color:var(--accent); text-transform:uppercase; margin-bottom:5px; font-weight:600; }
+.fish-report-text { font-size:12px; color:#fff; font-weight:400; line-height:1.7; text-shadow:var(--shadow-text); }
+.fish-report-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+.fish-tag { font-size:10px; padding:3px 8px; background:rgba(232,201,122,0.16); border:1px solid rgba(232,201,122,0.3); border-radius:10px; color:var(--accent); font-weight:500; }
+.fish-tag.bad { background:rgba(240,122,122,0.14); border-color:rgba(240,122,122,0.3); color:var(--bad); }
+.fish-tag.good { background:rgba(122,219,160,0.14); border-color:rgba(122,219,160,0.3); color:var(--good); }
+#fish-last-update { margin-top:8px; font-size:9px; color:rgba(255,255,255,0.6); font-weight:400; }
+
+/* ── AI SPECIES CARD ── */
+.species-header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+#species-ai-badge { display:flex; align-items:center; gap:5px; background:rgba(122,184,240,0.14); border:1px solid rgba(122,184,240,0.32); border-radius:20px; padding:3px 10px; cursor:pointer; transition:background 0.2s; }
+#species-ai-badge:hover { background:rgba(122,184,240,0.28); }
+.ai-dot { width:6px; height:6px; background:#7ab8f0; border-radius:50%; animation:livepulse 2.5s infinite; }
+#species-ai-text { font-size:9px; color:#7ab8f0; letter-spacing:1px; font-weight:600; }
+#species-location-sub { font-size:11px; color:rgba(255,255,255,0.75); margin-bottom:10px; font-weight:400; text-shadow:var(--shadow-text); }
+#species-loading { display:flex; align-items:center; gap:8px; padding:12px 0; }
+.species-spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,0.15); border-top-color:#7ab8f0; border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.species-item { background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 13px; margin-bottom:7px; }
+.species-item-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; }
+.species-name { font-family:var(--font-serif); font-size:18px; color:#fff; font-weight:600; text-shadow:var(--shadow-text); }
+.species-season-badge { font-size:9px; padding:2px 8px; border-radius:8px; letter-spacing:1px; text-transform:uppercase; font-weight:600; }
+.season-peak { background:rgba(122,219,160,0.2); border:1px solid rgba(122,219,160,0.35); color:var(--good); }
+.season-good { background:rgba(232,201,122,0.2); border:1px solid rgba(232,201,122,0.35); color:var(--warn); }
+.season-slow { background:rgba(240,122,122,0.12); border:1px solid rgba(240,122,122,0.25); color:var(--bad); }
+.species-detail { font-size:11px; color:#fff; line-height:1.65; font-weight:400; text-shadow:var(--shadow-text); }
+.species-tactics { margin-top:6px; display:flex; flex-wrap:wrap; gap:3px; }
+.species-tactic { font-size:9px; padding:2px 7px; background:rgba(122,184,240,0.14); border:1px solid rgba(122,184,240,0.25); border-radius:7px; color:#7ab8f0; font-weight:500; }
+#species-last-update { font-size:9px; color:rgba(255,255,255,0.55); margin-top:6px; }
+#species-error { font-size:12px; color:var(--bad); padding:10px 0; font-weight:400; }
+
+/* ── TIDES ── */
+#tide-list { display:flex; flex-direction:column; gap:7px; margin-top:6px; }
+.tide-item { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; background:rgba(0,0,0,0.32); border:1px solid rgba(255,255,255,0.12); border-radius:10px; }
+.tide-left { display:flex; align-items:center; gap:8px; }
+.tide-icon { font-size:15px; }
+.tide-type { font-family:var(--font-serif); font-size:15px; color:#fff; font-weight:400; text-shadow:var(--shadow-text); }
+.tide-time { font-size:12px; color:rgba(255,255,255,0.7); font-weight:400; }
+.tide-ht { font-family:var(--font-serif); font-size:16px; color:var(--accent); font-weight:600; text-shadow:var(--shadow-text); }
+
+/* ── SOLAR ── */
+#solar-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-top:8px; }
+.solar-item { background:rgba(0,0,0,0.32); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:8px 10px; text-align:center; }
+.solar-label { font-size:8px; color:var(--accent); letter-spacing:1.5px; text-transform:uppercase; font-weight:600; }
+.solar-value { font-family:var(--font-serif); font-size:16px; color:#fff; margin-top:3px; font-weight:400; text-shadow:var(--shadow-text); }
+
+/* ── RIGHT: CALENDAR ── */
+#col-right { background:rgba(255,255,255,0.04); border-left:1px solid rgba(255,255,255,0.08); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+#cal-block { flex:1; padding:18px 18px 10px; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
+#cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-shrink:0; }
+#cal-month { font-family:var(--font-serif); font-size:32px; color:#fff; font-weight:400; letter-spacing:0.5px; text-shadow:var(--shadow-text); }
+#cal-right-ctrl { display:flex; align-items:center; gap:8px; }
+#cal-status { font-size:10px; color:rgba(255,255,255,0.65); font-style:italic; }
+#cal-nav { display:flex; gap:4px; }
+#cal-nav button { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#fff; width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:15px; transition:background 0.2s; }
+#cal-nav button:hover { background:rgba(232,201,122,0.22); }
+#cal-grid { display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:1fr; gap:4px; flex:1; min-height:0; }
+.cal-dow { text-align:center; font-size:9px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:2px; padding-bottom:6px; display:flex; align-items:center; justify-content:center; }
+.cal-day { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:7px 7px 4px; display:flex; flex-direction:column; overflow:hidden; transition:background 0.15s; min-height:0; }
+.cal-day:hover { background:rgba(255,255,255,0.09); }
+.cal-day-num { font-family:var(--font-serif); font-size:17px; color:#fff; font-weight:400; line-height:1; flex-shrink:0; margin-bottom:3px; text-shadow:var(--shadow-text); }
+.cal-day.today { background:rgba(232,201,122,0.2); border-color:rgba(232,201,122,0.6); }
+.cal-day.today .cal-day-num { color:var(--accent); font-weight:600; }
+.cal-day.other-month { opacity:0.3; }
+.cal-events { display:flex; flex-direction:column; gap:2px; overflow:hidden; flex:1; }
+.cal-event { font-size:8.5px; font-weight:600; background:var(--accent); color:#1a1000; border-radius:3px; padding:2px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.45; }
+.cal-event.multiday { background:rgba(122,184,240,0.7); color:#fff; }
+.cal-more { font-size:8px; color:rgba(255,255,255,0.6); padding:0 2px; }
+#upcoming-block { padding:10px 18px 16px; flex-shrink:0; border-top:1px solid rgba(255,255,255,0.08); }
+.section-label-sm { font-size:9px; font-weight:600; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:9px; }
+#upcoming-list { display:flex; flex-direction:column; gap:5px; }
+.upcoming-item { display:flex; align-items:center; gap:10px; padding:9px 12px; background:rgba(0,0,0,0.32); border:1px solid rgba(255,255,255,0.1); border-radius:9px; border-left:2px solid var(--accent); }
+.upcoming-date { font-family:var(--font-serif); font-size:13px; color:var(--accent); white-space:nowrap; min-width:95px; font-weight:400; text-shadow:var(--shadow-text); }
+.upcoming-title { font-size:12px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:400; text-shadow:var(--shadow-text); }
+
+/* AUTOCOMPLETE */
+.autocomplete-wrap { position:relative; flex:1; }
+.autocomplete-list { position:absolute; top:100%; left:0; right:0; z-index:999; background:rgba(8,18,34,0.97); border:1px solid rgba(255,255,255,0.2); border-top:none; border-radius:0 0 8px 8px; max-height:200px; overflow-y:auto; backdrop-filter:blur(20px); }
+.autocomplete-list:empty { display:none; }
+.ac-item { padding:10px 13px; font-size:12px; color:#fff; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.07); transition:background 0.15s; font-weight:400; }
+.ac-item:last-child { border-bottom:none; }
+.ac-item:hover { background:rgba(232,201,122,0.18); color:var(--accent); }
+
+/* SETTINGS */
+#settings-btn { position:fixed; top:14px; right:14px; z-index:100; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.2); backdrop-filter:blur(10px); color:#fff; border-radius:50%; width:36px; height:36px; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.2s; }
+#settings-btn:hover { background:rgba(232,201,122,0.22); }
+#settings-panel { display:none; position:fixed; inset:0; z-index:500; background:rgba(4,10,20,0.97); backdrop-filter:blur(30px); overflow-y:auto; padding:40px 30px; }
+.s-inner { max-width:760px; margin:0 auto; }
+.s-title { font-family:var(--font-serif); font-size:32px; color:#fff; margin-bottom:4px; font-weight:300; letter-spacing:1px; }
+.s-subtitle { font-size:13px; color:rgba(255,255,255,0.6); margin-bottom:30px; font-weight:300; }
+.s-section { margin-bottom:26px; }
+.s-section-title { font-size:9px; font-weight:600; letter-spacing:3.5px; color:var(--accent); text-transform:uppercase; margin-bottom:12px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.1); }
+.s-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.s-field { display:flex; flex-direction:column; gap:5px; }
+.s-field.full { grid-column:1/-1; }
+.s-field label { font-size:12px; color:rgba(255,255,255,0.65); font-weight:400; }
+.s-field input, .s-field select { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:9px 12px; color:#fff; font-size:13px; font-family:var(--font-sans); outline:none; transition:border-color 0.2s; width:100%; }
+.s-field input:focus, .s-field select:focus { border-color:var(--accent); }
+.s-field select option { background:#060e1a; }
+.s-note { font-size:11px; color:rgba(255,255,255,0.5); font-style:italic; margin-top:3px; line-height:1.55; font-weight:300; }
+.s-actions { display:flex; gap:10px; margin-top:26px; flex-wrap:wrap; }
+.color-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+.color-swatch { width:32px; height:32px; border-radius:8px; cursor:pointer; border:2px solid transparent; transition:all 0.2s; }
+.color-swatch.active { border-color:#fff; transform:scale(1.12); }
+.s-hotkey { font-size:11px; color:rgba(255,255,255,0.45); margin-top:9px; font-style:italic; font-weight:300; }
+.btn { padding:10px 22px; border-radius:8px; border:none; font-family:var(--font-sans); font-size:13px; font-weight:500; cursor:pointer; transition:all 0.2s; }
+.btn-primary { background:var(--accent); color:#1a1000; }
+.btn-primary:hover { opacity:0.85; }
+.btn-secondary { background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.18); }
+.btn-secondary:hover { background:rgba(255,255,255,0.14); }
+.s-presets { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+.s-preset { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); border-radius:6px; padding:5px 10px; font-size:11px; color:#fff; cursor:pointer; font-family:var(--font-sans); transition:all 0.2s; font-weight:400; }
+.s-preset:hover { background:rgba(232,201,122,0.2); border-color:var(--accent); color:var(--accent); }
+.geo-status { font-size:11px; margin-top:6px; font-style:italic; min-height:16px; }
+
+.loading { opacity:0.4; animation:pulse 1.8s infinite; }
+@keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:0.7} }
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:4px; }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<button id="settings-btn" onclick="openSettings()" title="Settings (S)">⚙️</button>
+
+<div id="app">
+  <div id="col-left">
+    <div id="clock-block">
+      <div id="clock-time"><span id="cl-h">12</span><span id="clock-sep" style="opacity:0.5">:</span><span id="cl-m">00</span><span id="clock-ampm">AM</span></div>
+      <div id="clock-date">Loading…</div>
+    </div>
+    <div id="carousel-nav">
+      <button class="c-dot active" onclick="goToPanel(0)" title="Weather"></button>
+      <button class="c-dot" onclick="goToPanel(1)" title="Fishing"></button>
+      <button class="c-dot" onclick="goToPanel(2)" title="Species Guide"></button>
+      <button class="c-dot" onclick="goToPanel(3)" title="Tides & Moon"></button>
+      <span id="carousel-label">WEATHER</span>
+    </div>
+    <div id="carousel-viewport">
+      <div id="carousel-track">
+
+        <!-- PANEL 0: WEATHER -->
+        <div class="carousel-panel" id="panel-weather">
+          <div class="wcard">
+            <div class="wlabel" id="weather-loc-label">📍 Jupiter, Florida</div>
+            <div id="weather-main-row">
+              <div id="weather-icon" class="loading">🌤</div>
+              <div>
+                <div id="weather-temp" class="loading">--°</div>
+                <div id="weather-desc" class="loading">Loading…</div>
+                <div id="weather-feels"></div>
+              </div>
+            </div>
+            <div class="w-grid">
+              <div class="w-stat"><div class="w-stat-label">Wind</div><div class="w-stat-value" id="w-wind">--</div></div>
+              <div class="w-stat"><div class="w-stat-label">Humidity</div><div class="w-stat-value" id="w-hum">--</div></div>
+              <div class="w-stat"><div class="w-stat-label">Pressure</div><div class="w-stat-value" id="w-pres">--</div></div>
+              <div class="w-stat"><div class="w-stat-label">Precip</div><div class="w-stat-value" id="w-rain">--</div></div>
+            </div>
+            <!-- Hourly: scrollable horizontal strip with visible scrollbar -->
+            <div id="hourly-scroll"></div>
+            <div id="forecast-row" class="loading" style="min-height:50px"></div>
+            <div id="sun-row">
+              <div class="sun-pill"><div class="sun-label">🌙 Moon</div><div class="sun-value" id="moon-val">--</div></div>
+              <div class="sun-pill"><div class="sun-label">🌅 Rise</div><div class="sun-value" id="sunrise-val">--</div></div>
+              <div class="sun-pill"><div class="sun-label">🌇 Set</div><div class="sun-value" id="sunset-val">--</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL 1: FISHING -->
+        <div class="carousel-panel" id="panel-fishing">
+          <div class="wcard" id="fishing-card">
+            <div class="fish-header-row">
+              <div class="wlabel" style="margin-bottom:0">🎣 Fishing Report</div>
+              <div id="fish-live-badge" onclick="refreshFishingNow()"><div class="live-dot"></div><span id="fish-refresh-text">LIVE</span></div>
+            </div>
+            <div id="fish-location-display">Loading…</div>
+            <div id="fish-score-row">
+              <div id="fish-score" class="loading">--</div>
+              <div><div id="fish-score-sub">out of 10</div><div id="fish-score-label">Calculating…</div></div>
+            </div>
+            <div class="bar-row"><div class="bar-labels"><span>Wind</span><span id="fb-wind-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-wind" style="width:0%"></div></div></div>
+            <div class="bar-row"><div class="bar-labels"><span>Temp</span><span id="fb-temp-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-temp" style="width:0%"></div></div></div>
+            <div class="bar-row"><div class="bar-labels"><span>Pressure</span><span id="fb-pres-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-pres" style="width:0%"></div></div></div>
+            <div class="bar-row"><div class="bar-labels"><span>Cloud</span><span id="fb-cloud-val">--</span></div><div class="bar-track"><div class="bar-fill" id="fb-cloud" style="width:0%"></div></div></div>
+            <div id="fish-report-block"><div id="fish-report-content"><div class="loading" style="font-size:12px">Loading report…</div></div></div>
+            <div id="fish-last-update"></div>
+          </div>
+        </div>
+
+        <!-- PANEL 2: AI SPECIES GUIDE -->
+        <div class="carousel-panel" id="panel-species">
+          <div class="wcard" id="species-card">
+            <div class="species-header-row">
+              <div class="wlabel" style="margin-bottom:0">🐟 AI Species Guide</div>
+              <div id="species-ai-badge" onclick="loadSpeciesGuide(true)">
+                <div class="ai-dot"></div>
+                <span id="species-ai-text">REFRESH</span>
+              </div>
+            </div>
+            <div id="species-location-sub">Loading…</div>
+            <div id="species-loading" style="display:none">
+              <div class="species-spinner"></div>
+              <span style="font-size:12px;color:rgba(255,255,255,0.7)">Asking AI for current conditions…</span>
+            </div>
+            <div id="species-content"></div>
+            <div id="species-error" style="display:none"></div>
+            <div id="species-last-update"></div>
+          </div>
+        </div>
+
+        <!-- PANEL 3: TIDES & MOON -->
+        <div class="carousel-panel" id="panel-tides">
+          <div class="wcard">
+            <div class="wlabel" id="tide-loc-label">🌊 Tides</div>
+            <div id="tide-list"><div class="loading" style="font-size:12px;color:rgba(255,255,255,0.65)">Loading…</div></div>
+          </div>
+          <div class="wcard">
+            <div class="wlabel">☀️ Solar & Moon</div>
+            <div id="solar-grid">
+              <div class="solar-item"><div class="solar-label">Phase</div><div class="solar-value" id="sol-moon">--</div></div>
+              <div class="solar-item"><div class="solar-label">Illumination</div><div class="solar-value" id="sol-illum">--</div></div>
+              <div class="solar-item"><div class="solar-label">Golden Hour</div><div class="solar-value" id="sol-gold">--</div></div>
+              <div class="solar-item"><div class="solar-label">Wind Dir</div><div class="solar-value" id="sol-winddir">--</div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: CALENDAR -->
+  <div id="col-right">
+    <div id="cal-block">
+      <div id="cal-header">
+        <div id="cal-month" class="loading">Loading…</div>
+        <div id="cal-right-ctrl">
+          <div id="cal-status">⏳ Syncing…</div>
+          <div id="cal-nav"><button onclick="changeViewMonth(-1)">‹</button><button onclick="changeViewMonth(1)">›</button></div>
+        </div>
+      </div>
+      <div id="cal-grid"></div>
+    </div>
+    <div id="upcoming-block">
+      <div class="section-label-sm">📅 Upcoming Events</div>
+      <div id="upcoming-list"><div class="loading" style="font-size:12px;color:rgba(255,255,255,0.65)">Syncing…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="settings-panel">
+  <div class="s-inner">
+    <div class="s-title">Dashboard Settings</div>
+    <div class="s-subtitle">Type a location to search — coordinates, tide station, nearby spots, and species all update automatically. Press S to toggle · Esc to close.</div>
+
+    <div class="s-section">
+      <div class="s-section-title">📍 Weather Location</div>
+      <div class="s-grid">
+        <div class="s-field full">
+          <label>City / Location (type to search)</label>
+          <div class="autocomplete-wrap">
+            <input id="s-city" placeholder="Jupiter, FL" autocomplete="off" oninput="acDebounce('s-city','ac-weather','weather')">
+            <div class="autocomplete-list" id="ac-weather"></div>
+          </div>
+          <div class="geo-status" id="geo-weather-status"></div>
+        </div>
+        <div class="s-field"><label>Latitude</label><input id="s-lat" placeholder="26.9342"></div>
+        <div class="s-field"><label>Longitude</label><input id="s-lon" placeholder="-80.0942"></div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-section-title">🎣 Fishing Location</div>
+      <div class="s-grid">
+        <div class="s-field full">
+          <label>Fishing Spot (type to search)</label>
+          <div class="autocomplete-wrap">
+            <input id="s-fish-name" placeholder="Juno Beach, FL" autocomplete="off" oninput="acDebounce('s-fish-name','ac-fish','fish')">
+            <div class="autocomplete-list" id="ac-fish"></div>
+          </div>
+          <div class="geo-status" id="geo-fish-status"></div>
+          <div class="s-note">Selecting a location auto-fills coordinates, nearest tide station, nearby spots, and recommended species.</div>
+        </div>
+        <div class="s-field full">
+          <label>Nearby Spots (auto-generated when you pick a location)</label>
+          <div class="s-presets" id="s-fish-presets"><span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">Select a fishing location above to see nearby spots</span></div>
+        </div>
+        <div class="s-field"><label>Latitude</label><input id="s-fish-lat" placeholder="26.8701"></div>
+        <div class="s-field"><label>Longitude</label><input id="s-fish-lon" placeholder="-80.0534"></div>
+        <div class="s-field full">
+          <label>NOAA Tide Station ID (auto-filled)</label>
+          <input id="s-tide-station" placeholder="8722669">
+          <div class="s-note">Auto-filled when you pick a location. Find manually at <strong>tidesandcurrents.noaa.gov/stations.html</strong></div>
+        </div>
+        <div class="s-field full">
+          <label>Target Species (auto-suggested, or edit manually)</label>
+          <input id="s-fish-species" placeholder="Snook, tarpon, redfish, flounder">
+          <div class="s-note">Auto-suggested based on location. Edit to customize what appears in your fishing report and AI species guide.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-section-title">🤖 AI Species Guide</div>
+      <div class="s-grid">
+        <div class="s-field full">
+          <label>Gemini API Key</label>
+          <input id="s-gemini-key" type="password" placeholder="Paste your Gemini API key here">
+          <div class="s-note">Free from <strong>aistudio.google.com/apikey</strong> — required for AI species recommendations.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-section-title">📅 Google Calendar</div>
+      <div class="s-grid">
+        <div class="s-field full">
+          <label>iCal Secret URL</label>
+          <input id="s-ical-url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics">
+          <div class="s-note">Google Calendar → Settings → your calendar → "Secret address in iCal format".</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-section-title">🖼 Background Image</div>
+      <div class="s-grid">
+        <div class="s-field full"><label>Image URL (blank = default beach photo)</label><input id="s-bg" placeholder="https://images.unsplash.com/…"></div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-section-title">🎨 Accent Color</div>
+      <div class="color-row" id="color-row">
+        <div class="color-swatch active" data-color="#e8c97a" style="background:#e8c97a" title="Gold"></div>
+        <div class="color-swatch" data-color="#7ab8f0" style="background:#7ab8f0" title="Blue"></div>
+        <div class="color-swatch" data-color="#7adba0" style="background:#7adba0" title="Mint"></div>
+        <div class="color-swatch" data-color="#f07a7a" style="background:#f07a7a" title="Coral"></div>
+        <div class="color-swatch" data-color="#b87af0" style="background:#b87af0" title="Lavender"></div>
+        <div class="color-swatch" data-color="#7af0e8" style="background:#7af0e8" title="Teal"></div>
+        <div class="color-swatch" data-color="#f0a07a" style="background:#f0a07a" title="Peach"></div>
+        <div class="color-swatch" data-color="#c8d0e0" style="background:#c8d0e0" title="Silver"></div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-section-title">🕐 Display</div>
+      <div class="s-grid">
+        <div class="s-field"><label>Time Format</label><select id="s-timefmt"><option value="12">12-hour (AM/PM)</option><option value="24">24-hour</option></select></div>
+        <div class="s-field"><label>Temperature Unit</label><select id="s-tempunit"><option value="F">Fahrenheit (°F)</option><option value="C">Celsius (°C)</option></select></div>
+      </div>
+    </div>
+
+    <div class="s-actions">
+      <button class="btn btn-primary" onclick="saveSettings()">Save & Apply</button>
+      <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-secondary" onclick="resetSettings()">Reset Defaults</button>
+    </div>
+    <div class="s-hotkey">S = open/close · Esc = close · Arrow keys = switch panels</div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONSTANTS & CONFIG
+// ══════════════════════════════════════════
+const DEFAULT_BG = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2400';
+const DEFAULT_ICAL = 'https://calendar.google.com/calendar/ical/aaronspero1%40gmail.com/private-fcf40194d406df57c8aaba1dbef1c70c/basic.ics';
+const CORS_PROXIES = [
+  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u => `https://thingproxy.freeboard.io/fetch/${u}`,
+];
+
+// Species database keyed by region keywords
+const SPECIES_DB = {
+  florida_south: { species:'Snook, tarpon, redfish, flounder, cobia', methods:'Live pilchards, DOA shrimp, gold spoons, soft plastics' },
+  florida_keys:  { species:'Tarpon, bonefish, permit, snook, barracuda', methods:'Crabs, shrimp flies, live bait, streamers' },
+  chesapeake:    { species:'Striped bass, white perch, catfish, bluefish', methods:'Bucktails, bloodworms, live spot, soft plastics' },
+  gulf:          { species:'Redfish, speckled trout, flounder, cobia', methods:'Gold spoons, DOA shrimp, popping corks, live bait' },
+  northeast:     { species:'Striped bass, bluefish, flounder, weakfish', methods:'Bunker chunks, soft plastics, topwater plugs' },
+  freshwater:    { species:'Largemouth bass, crappie, catfish, bluegill', methods:'Soft plastics, jigs, live worms, crankbaits' },
+  default:       { species:'Bass, perch, catfish, panfish', methods:'Live bait, soft plastics, spinners, crankbaits' },
+};
+
+function guessSpecies(lat, lon, name) {
+  const nameLower = (name||'').toLowerCase();
+  if (nameLower.includes('key') || (lat < 25.5 && lon > -81.5 && lon < -80)) return SPECIES_DB.florida_keys;
+  if (lat < 27.5 && lat > 24 && lon > -82 && lon < -79) return SPECIES_DB.florida_south;
+  if (nameLower.includes('gulf') || (lon < -88 && lat < 31)) return SPECIES_DB.gulf;
+  if (lat > 36 && lat < 42 && lon > -77 && lon < -70) return SPECIES_DB.northeast;
+  if (lat > 37 && lat < 40 && lon > -77.5 && lon < -75) return SPECIES_DB.chesapeake;
+  if (nameLower.includes('lake') || nameLower.includes('river') || nameLower.includes('creek')) return SPECIES_DB.freshwater;
+  if (lat < 31 && lon > -82) return SPECIES_DB.florida_south;
+  return SPECIES_DB.default;
+}
+
+const DEFAULTS = {
+  city:'Jupiter, Florida', lat:26.9342, lon:-80.0942,
+  fishName:'Juno Beach, Florida', fishLat:26.8701, fishLon:-80.0534,
+  fishSpecies:'Snook, tarpon, redfish, flounder',
+  tideStation:'8722669',
+  icalUrl:DEFAULT_ICAL, bg:DEFAULT_BG,
+  accentColor:'#e8c97a', timeFmt:'12', tempUnit:'F',
+  geminiKey:'',
+};
+function getCFG() {
+  try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('fishDash11')||'{}')); }
+  catch(e) { return Object.assign({}, DEFAULTS); }
+}
+let CFG = getCFG();
+
+// ══════════════════════════════════════════
+//  CAROUSEL
+// ══════════════════════════════════════════
+const PANEL_LABELS = ['WEATHER','FISHING','SPECIES','TIDES'];
+let currentPanel = 0, carouselAutoTimer = null, carouselPaused = false;
+const CAROUSEL_INTERVAL = 18000;
+
+function initCarousel() {
+  const vp = document.getElementById('carousel-viewport');
+  const panels = document.querySelectorAll('.carousel-panel');
+  const h = vp.clientHeight;
+  panels.forEach(p => p.style.height = h + 'px');
+  updateCarouselPos(false);
+  startCarouselAuto();
+}
+function updateCarouselPos(anim=true) {
+  const vp = document.getElementById('carousel-viewport');
+  const h = vp.clientHeight;
+  const track = document.getElementById('carousel-track');
+  if (!anim) { track.style.transition='none'; }
+  track.style.transform = `translateY(${-currentPanel * h}px)`;
+  if (!anim) setTimeout(()=>track.style.transition='',50);
+  document.querySelectorAll('.c-dot').forEach((d,i)=>d.classList.toggle('active',i===currentPanel));
+  document.getElementById('carousel-label').textContent = PANEL_LABELS[currentPanel];
+}
+function goToPanel(idx) {
+  currentPanel = idx; updateCarouselPos(true); restartCarouselAuto();
+if (idx===2 && !speciesLoaded) return;}
+function nextPanel() { currentPanel=(currentPanel+1)%4; updateCarouselPos(true); if(currentPanel===2&&!speciesLoaded)loadSpeciesGuide(false); }
+function startCarouselAuto() { clearInterval(carouselAutoTimer); carouselAutoTimer=setInterval(()=>{if(!carouselPaused)nextPanel();},CAROUSEL_INTERVAL); }
+function restartCarouselAuto() { clearInterval(carouselAutoTimer); startCarouselAuto(); }
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const vp=document.getElementById('carousel-viewport');
+  if(vp){
+    vp.addEventListener('mouseenter',()=>carouselPaused=true);
+    vp.addEventListener('mouseleave',()=>{carouselPaused=false;restartCarouselAuto();});
+  }
+});
+window.addEventListener('resize',()=>{
+  const vp=document.getElementById('carousel-viewport');
+  const panels=document.querySelectorAll('.carousel-panel');
+  const h=vp.clientHeight;
+  panels.forEach(p=>p.style.height=h+'px');
+  updateCarouselPos(false);
+});
+
+// ══════════════════════════════════════════
+//  SETTINGS APPLY
+// ══════════════════════════════════════════
+function applySettings() {
+  document.documentElement.style.setProperty('--accent', CFG.accentColor);
+  const bgEl=document.getElementById('bg'); bgEl.classList.add('fade');
+  setTimeout(()=>{bgEl.style.backgroundImage=`url('${CFG.bg||DEFAULT_BG}')`;bgEl.classList.remove('fade');},700);
+  document.getElementById('weather-loc-label').textContent='📍 '+CFG.city;
+  document.getElementById('fish-location-display').textContent=CFG.fishName;
+  document.getElementById('tide-loc-label').textContent='🌊 Tides — '+CFG.fishName.split(',')[0];
+  document.getElementById('species-location-sub').textContent=CFG.fishName;
+}
+applySettings();
+
+// ══════════════════════════════════════════
+//  AUTOCOMPLETE + SMART AUTO-FILL
+// ══════════════════════════════════════════
+let acTimers={};
+function acDebounce(inputId,listId,type) {
+  clearTimeout(acTimers[inputId]);
+  acTimers[inputId]=setTimeout(()=>doAC(inputId,listId,type),320);
+}
+async function doAC(inputId,listId,type) {
+  const val=document.getElementById(inputId).value.trim();
+  const list=document.getElementById(listId);
+  if(val.length<2){list.innerHTML='';return;}
+  try {
+    const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=8&language=en&format=json`);
+    const d=await r.json();
+    if(!d.results?.length){list.innerHTML='';return;}
+    list.innerHTML=d.results.map((res,i)=>{
+      const label=[res.name,res.admin1,res.country].filter(Boolean).join(', ');
+      const safe=label.replace(/'/g,"\\'");
+      return `<div class="ac-item" onclick="pickAC('${type}','${safe}',${res.latitude},${res.longitude},'${inputId}','${listId}')">${label}</div>`;
+    }).join('');
+    list._results=d.results;
+  } catch(e){list.innerHTML='';}
+}
+
+async function pickAC(type, label, lat, lon, inputId, listId) {
+  document.getElementById(inputId).value=label;
+  document.getElementById(listId).innerHTML='';
+
+  if(type==='weather'){
+    document.getElementById('s-lat').value=lat.toFixed(4);
+    document.getElementById('s-lon').value=lon.toFixed(4);
+    const st=document.getElementById('geo-weather-status');
+    st.textContent=`✅ ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+    st.style.color='var(--good)';
+  }
+  else if(type==='fish'){
+    document.getElementById('s-fish-lat').value=lat.toFixed(4);
+    document.getElementById('s-fish-lon').value=lon.toFixed(4);
+    const st=document.getElementById('geo-fish-status');
+    st.textContent='📍 Finding tide station & generating nearby spots…';
+    st.style.color='var(--warn)';
+
+    // Auto-suggest species based on location
+    const speciesInfo=guessSpecies(lat,lon,label);
+    document.getElementById('s-fish-species').value=speciesInfo.species;
+
+    // Generate nearby spots dynamically
+    generateNearbySpots(lat, lon, label);
+
+    // Find nearest NOAA tide station
+    const station=await findNearestTideStation(lat,lon);
+    if(station){
+      document.getElementById('s-tide-station').value=station.id;
+      st.textContent=`✅ Tide station: ${station.name} (${station.id}) · Species auto-suggested`;
+      st.style.color='var(--good)';
+    } else {
+      st.textContent='✅ Coordinates set · Species auto-suggested · Enter tide station manually';
+      st.style.color='var(--warn)';
     }
   }
-};
+}
+
+async function generateNearbySpots(lat, lon, centerName) {
+  const presetsEl=document.getElementById('s-fish-presets');
+  presetsEl.innerHTML='<span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">Searching nearby spots…</span>';
+
+  try {
+    // Search for fishing spots within ~30km radius
+    const queries=[
+      `${centerName.split(',')[0]} beach`,
+      `inlet near ${centerName.split(',')[0]}`,
+      `${centerName.split(',')[0]} pier`,
+    ];
+    const regionName=centerName.split(',').slice(1).join(',').trim()||'';
+    const searchQuery=`fishing ${centerName.split(',')[0]} ${regionName}`;
+
+    // Use Open-Meteo geocoding to find nearby places
+    const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(centerName.split(',')[0])}&count=10&language=en&format=json`);
+    const d=await r.json();
+
+    if(!d.results?.length){ presetsEl.innerHTML='<span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">No nearby spots found — enter manually</span>'; return; }
+
+    // Filter to within ~50km, exclude the exact same spot
+    const nearby=d.results.filter(res=>{
+      const dist=Math.hypot(res.latitude-lat,res.longitude-lon)*111; // rough km
+      return dist>0.5&&dist<60;
+    }).slice(0,6);
+
+    if(!nearby.length){ presetsEl.innerHTML='<span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">No nearby spots found — enter manually</span>'; return; }
+
+    presetsEl.innerHTML=nearby.map((res,i)=>{
+      const label=[res.name,res.admin1].filter(Boolean).join(', ');
+      const safe=label.replace(/'/g,"\\'");
+      return `<button class="s-preset" onclick="pickAC('fish','${safe}',${res.latitude},${res.longitude},'s-fish-name','ac-fish')">${res.name}</button>`;
+    }).join('');
+  } catch(e){
+    presetsEl.innerHTML='<span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">Could not load nearby spots</span>';
+  }
+}
+
+async function findNearestTideStation(lat,lon) {
+  try {
+    const r=await fetch('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=waterlevels&units=english');
+    const d=await r.json();
+    if(!d.stations)return null;
+    let best=null,bestDist=Infinity;
+    d.stations.forEach(s=>{const dist=Math.hypot(s.lat-lat,s.lng-lon);if(dist<bestDist){bestDist=dist;best=s;}});
+    return best?{id:best.id,name:best.name}:null;
+  } catch(e){return null;}
+}
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.autocomplete-wrap'))
+    document.querySelectorAll('.autocomplete-list').forEach(l=>l.innerHTML='');
+});
+
+// ══════════════════════════════════════════
+//  SETTINGS UI
+// ══════════════════════════════════════════
+function openSettings() {
+  document.getElementById('s-city').value=CFG.city;
+  document.getElementById('s-lat').value=CFG.lat;
+  document.getElementById('s-lon').value=CFG.lon;
+  document.getElementById('s-fish-name').value=CFG.fishName;
+  document.getElementById('s-fish-lat').value=CFG.fishLat;
+  document.getElementById('s-fish-lon').value=CFG.fishLon;
+  document.getElementById('s-fish-species').value=CFG.fishSpecies||'';
+  document.getElementById('s-tide-station').value=CFG.tideStation;
+  document.getElementById('s-ical-url').value=CFG.icalUrl===DEFAULT_ICAL?'':CFG.icalUrl;
+  document.getElementById('s-bg').value=CFG.bg===DEFAULT_BG?'':CFG.bg;
+  document.getElementById('s-timefmt').value=CFG.timeFmt;
+  document.getElementById('s-tempunit').value=CFG.tempUnit;
+  document.getElementById('s-gemini-key').value=CFG.geminiKey||'';
+  document.querySelectorAll('.color-swatch').forEach(el=>el.classList.toggle('active',el.dataset.color===CFG.accentColor));
+  document.getElementById('geo-weather-status').textContent='';
+  document.getElementById('geo-fish-status').textContent='';
+  document.getElementById('s-fish-presets').innerHTML='<span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">Pick a location above to see nearby spots</span>';
+  document.getElementById('settings-panel').style.display='block';
+}
+function closeSettings(){
+  document.querySelectorAll('.autocomplete-list').forEach(l=>l.innerHTML='');
+  document.getElementById('settings-panel').style.display='none';
+}
+function saveSettings(){
+  CFG.city=document.getElementById('s-city').value.trim()||DEFAULTS.city;
+  CFG.lat=parseFloat(document.getElementById('s-lat').value)||DEFAULTS.lat;
+  CFG.lon=parseFloat(document.getElementById('s-lon').value)||DEFAULTS.lon;
+  const fn=document.getElementById('s-fish-name').value.trim();
+  const fl=parseFloat(document.getElementById('s-fish-lat').value);
+  const fo=parseFloat(document.getElementById('s-fish-lon').value);
+  const ts=document.getElementById('s-tide-station').value.trim();
+  if(fn)CFG.fishName=fn; if(!isNaN(fl))CFG.fishLat=fl; if(!isNaN(fo))CFG.fishLon=fo; if(ts)CFG.tideStation=ts;
+  CFG.fishSpecies=document.getElementById('s-fish-species').value.trim()||DEFAULTS.fishSpecies;
+  const icalIn=document.getElementById('s-ical-url').value.trim(); CFG.icalUrl=icalIn||DEFAULT_ICAL;
+  const bgIn=document.getElementById('s-bg').value.trim(); CFG.bg=bgIn||DEFAULT_BG;
+  CFG.timeFmt=document.getElementById('s-timefmt').value;
+  CFG.tempUnit=document.getElementById('s-tempunit').value;
+  CFG.geminiKey=document.getElementById('s-gemini-key').value.trim();
+  const ac=document.querySelector('.color-swatch.active'); if(ac)CFG.accentColor=ac.dataset.color;
+  localStorage.setItem('fishDash11',JSON.stringify(CFG));
+  closeSettings(); applySettings();
+  speciesLoaded=false;
+  loadWeather(); loadFishingWeather(); loadTides(); loadCalendar(); startFishRefreshCycle();
+  if(currentPanel===2)loadSpeciesGuide(true);
+}
+function resetSettings(){
+  if(!confirm('Reset all settings to defaults?'))return;
+  localStorage.removeItem('fishDash11'); CFG=Object.assign({},DEFAULTS);
+  speciesLoaded=false; openSettings(); applySettings();
+}
+document.querySelectorAll('.color-swatch').forEach(el=>el.addEventListener('click',()=>{
+  document.querySelectorAll('.color-swatch').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  document.documentElement.style.setProperty('--accent',el.dataset.color);
+}));
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+  if(e.key==='s'||e.key==='S'){const p=document.getElementById('settings-panel');p.style.display==='block'?closeSettings():openSettings();}
+  if(e.key==='Escape')closeSettings();
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')goToPanel((currentPanel+1)%4);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')goToPanel((currentPanel+3)%4);
+});
+
+// ══════════════════════════════════════════
+//  AI SPECIES GUIDE
+// ══════════════════════════════════════════
+let speciesLoaded=false, speciesWeatherCache=null;
+
+async function loadSpeciesGuide(forceRefresh=false) {
+  if (speciesLoaded && !forceRefresh) return;
+
+  speciesLoaded = false;
+  window.lastAICall = Date.now();
+
+  const loadingEl=document.getElementById('species-loading');
+  const contentEl=document.getElementById('species-content');
+  const errorEl=document.getElementById('species-error');
+  const aiText=document.getElementById('species-ai-text');
+  const locSub=document.getElementById('species-location-sub');
+
+  const now=new Date(), month=now.getMonth(), hour=now.getHours();
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const speciesList=CFG.fishSpecies||'Snook, tarpon, redfish, flounder';
+  const location=CFG.fishName;
+
+  locSub.textContent=location+' — AI analysis in progress…';
+  loadingEl.style.display='flex';
+  contentEl.innerHTML='';
+  errorEl.style.display='none';
+  aiText.textContent='LOADING…';
+
+  let weatherCtx='';
+  if(speciesWeatherCache){
+    const c=speciesWeatherCache;
+    const tempF=Math.round(c.temperature_2m*9/5+32);
+    const wmoDesc={0:'clear',1:'mostly clear',2:'partly cloudy',3:'overcast',61:'raining',63:'raining',65:'heavy rain',80:'showery',81:'rainy',82:'heavy showers',95:'thunderstorm'};
+    const cond=wmoDesc[c.weather_code]||'cloudy';
+    weatherCtx=`Current weather: ${tempF}°F, ${cond}, wind ${Math.round(c.wind_speed_10m)} mph, pressure ${Math.round(c.pressure_msl)} hPa, ${c.cloud_cover}% clouds, ${(c.precipitation||0).toFixed(2)}" precip.`;
+  }
+  const moonInfo=computeMoon();
+
+  const prompt=`You are an expert fishing guide at ${location}. Today is ${MONTHS[month]}, time is ${hour}:00.
+${weatherCtx}
+Moon: ${moonInfo.name} (${moonInfo.illum}% lit).
+Species to report on: ${speciesList}.
+
+Return ONLY valid JSON (no markdown, no explanation):
+{
+  "species": [
+    {
+      "name": "Species Name",
+      "status": "peak OR good OR slow",
+      "summary": "2 specific sentences about catching this species RIGHT NOW at ${location} in ${MONTHS[month]} given these conditions",
+      "tactics": ["tactic 1", "tactic 2", "tactic 3"],
+      "bait": "best bait or lure right now",
+      "spot": "specific type of spot to target",
+      "time": "best time today"
+    }
+  ]
+}`;
+
+  try {
+    if(!CFG.geminiKey)throw new Error('No API key');
+    const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${CFG.geminiKey}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+  contents: [{ parts: [{ text: prompt }] }]
+      })
+    });
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+   let text = '';
+
+try {
+  text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+} catch (e) {}
+
+if (!text) throw new Error('No AI response');
+
+let parsed;
+
+try {
+  const cleaned = text.replace(/```json|```/g, '').trim();
+  parsed = JSON.parse(cleaned);
+} catch (e) {
+  console.warn('Bad JSON from AI');
+
+  parsed = {
+    species: (CFG.fishSpecies || '').split(',').map(s => ({
+      name: s.trim(),
+      status: 'good',
+      summary: text.substring(0, 120),
+      tactics: ['live bait', 'structure', 'slow retrieve'],
+      bait: 'live bait',
+      spot: 'near structure',
+      time: 'morning/evening'
+    }))
+  };
+}
+    renderSpecies(parsed.species);
+    speciesLoaded=true;
+    aiText.textContent='UPDATED';
+    document.getElementById('species-last-update').textContent='AI guide updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    locSub.textContent=location+' · '+MONTHS[month];
+  } catch(e) {
+    console.warn('AI species error:',e);
+    loadingEl.style.display='none';
+    // Show helpful fallback instead of just an error
+    renderSpeciesFallback();
+    speciesLoaded=true;
+    aiText.textContent='RETRY';
+    errorEl.style.display='block';
+    errorEl.textContent=CFG.geminiKey?'⚠️ AI error — tap RETRY or check your API key in Settings (S).':'⚠️ Add your free Gemini API key in Settings (S) to enable AI species guide. Tap RETRY after.';
+    locSub.textContent=location+' · '+MONTHS[month]+' (offline)';
+  }
+}
+
+function renderSpecies(arr) {
+  document.getElementById('species-loading').style.display='none';
+  if(!arr?.length){renderSpeciesFallback();return;}
+  document.getElementById('species-content').innerHTML=arr.map(s=>{
+    const sc=s.status==='peak'?'season-peak':s.status==='good'?'season-good':'season-slow';
+    const sl=s.status==='peak'?'🔥 Peak Season':s.status==='good'?'✓ Good Bite':'· Slow Bite';
+    const tactics=(s.tactics||[]).map(t=>`<span class="species-tactic">${t}</span>`).join('');
+    return `<div class="species-item">
+      <div class="species-item-header"><span class="species-name">${s.name}</span><span class="species-season-badge ${sc}">${sl}</span></div>
+      <div class="species-detail">${s.summary}</div>
+      ${s.bait?`<div class="species-detail" style="margin-top:5px;color:var(--accent)">🎯 <strong>Bait:</strong> ${s.bait}</div>`:''}
+      ${s.spot?`<div class="species-detail" style="color:rgba(255,255,255,0.75)">📍 <strong>Spot:</strong> ${s.spot}</div>`:''}
+      ${s.time?`<div class="species-detail" style="color:rgba(255,255,255,0.75)">⏰ <strong>Best time:</strong> ${s.time}</div>`:''}
+      ${tactics?`<div class="species-tactics">${tactics}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderSpeciesFallback() {
+  document.getElementById('species-loading').style.display='none';
+  const now=new Date(), month=now.getMonth();
+  const speciesList=(CFG.fishSpecies||'Snook, redfish, flounder').split(',').map(s=>s.trim());
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const seasonData={
+    'Snook':   {s:[1,1,2,2,3,3,3,2,2,2,1,1],tip:'Target inlets and mangrove edges. Live pilchards or DOA shrimp work well.'},
+    'Tarpon':  {s:[1,1,1,2,3,3,2,2,1,1,1,1],tip:'Focus on passes and bridges at dawn/dusk. Large crabs or live mullet.'},
+    'Redfish': {s:[2,2,2,2,2,1,1,1,3,3,3,2],tip:'Shallow flats on incoming tide. Gold spoons or DOA CAL jigs.'},
+    'Flounder':{s:[2,2,2,2,1,1,1,1,2,3,3,2],tip:'Sandy bottom near structure. Live finger mullet near bottom.'},
+    'Cobia':   {s:[1,1,2,3,3,2,1,1,1,1,1,1],tip:'Open water near buoys and rays. Live eel or large jigs.'},
+    'Trout':   {s:[3,3,2,2,1,1,1,1,2,2,3,3],tip:'Grass flats 2-5ft. Mirrolure or DOA shrimp under popping cork.'},
+    'Bass':    {s:[2,2,3,3,3,2,2,2,3,3,2,2],tip:'Structure and vegetation edges. Plastic worms, jigs, topwater.'},
+  };
+  const statuses=['slow','good','peak'];
+  document.getElementById('species-content').innerHTML=speciesList.map(name=>{
+    const key=Object.keys(seasonData).find(k=>name.toLowerCase().includes(k.toLowerCase()));
+    const si=key?(seasonData[key].s[month]-1):1;
+    const status=statuses[Math.max(0,Math.min(2,si))];
+    const tip=key?seasonData[key].tip:`Target ${name} near structure with live bait or matching lures.`;
+    const sc=status==='peak'?'season-peak':status==='good'?'season-good':'season-slow';
+    const sl=status==='peak'?'🔥 Peak Season':status==='good'?'✓ Good Bite':'· Slow Bite';
+    return `<div class="species-item">
+      <div class="species-item-header"><span class="species-name">${name}</span><span class="species-season-badge ${sc}">${sl}</span></div>
+      <div class="species-detail">${tip} <em style="color:rgba(255,255,255,0.55)">(${MONTHS[month]} seasonal data)</em></div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+//  CLOCK
+// ══════════════════════════════════════════
+function updateClock(){
+  const now=new Date();let h=now.getHours(),m=now.getMinutes();
+  const amEl=document.getElementById('clock-ampm');
+  if(CFG.timeFmt==='12'){const ap=h>=12?'PM':'AM';h=h%12||12;amEl.textContent=ap;amEl.style.display='';}
+  else{amEl.style.display='none';}
+  document.getElementById('clock-sep').style.opacity=now.getSeconds()%2===0?'0.5':'0.1';
+  document.getElementById('cl-h').textContent=String(h).padStart(2,'0');
+  document.getElementById('cl-m').textContent=String(m).padStart(2,'0');
+  const D=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const M=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('clock-date').textContent=`${D[now.getDay()]}, ${M[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+}
+setInterval(updateClock,500);updateClock();
+
+// ══════════════════════════════════════════
+//  WMO CODES (complete)
+// ══════════════════════════════════════════
+const WMO_ICONS={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',56:'🌧',57:'🌧',61:'🌧',63:'🌧',65:'🌧',66:'🌧',67:'🌧',71:'🌨',73:'🌨',75:'❄️',77:'🌨',80:'🌦',81:'🌧',82:'⛈',85:'🌨',86:'❄️',95:'⛈',96:'⛈',99:'⛈'};
+const WMO_DESC={0:'Clear skies',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',56:'Freezing drizzle',57:'Heavy freezing drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Heavy freezing rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Light showers',81:'Rain showers',82:'Heavy showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Heavy thunderstorm'};
+const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function fmtTemp(c){return CFG.tempUnit==='F'?Math.round(c*9/5+32)+'°F':Math.round(c)+'°C';}
+function fmtWind(mph){return Math.round(mph)+' mph';}
+function fmtTime12(iso){const t=new Date(iso.length===16?iso+':00':iso);let h=t.getHours(),m=t.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return`${h}:${String(m).padStart(2,'0')} ${ap}`;}
+
+// ══════════════════════════════════════════
+//  WEATHER
+// ══════════════════════════════════════════
+function loadWeather(){
+  const url=`https://api.open-meteo.com/v1/forecast?latitude=${CFG.lat}&longitude=${CFG.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,pressure_msl,cloud_cover,precipitation&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset&temperature_unit=celsius&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York&forecast_days=7`;
+  fetch(url).then(r=>r.json()).then(d=>{
+    const c=d.current,daily=d.daily,hourly=d.hourly;
+    document.getElementById('weather-icon').textContent=WMO_ICONS[c.weather_code]||'🌡';document.getElementById('weather-icon').classList.remove('loading');
+    document.getElementById('weather-temp').textContent=fmtTemp(c.temperature_2m);document.getElementById('weather-temp').classList.remove('loading');
+    document.getElementById('weather-desc').textContent=WMO_DESC[c.weather_code]||'Unknown';document.getElementById('weather-desc').classList.remove('loading');
+    document.getElementById('weather-feels').textContent='Feels like '+fmtTemp(c.apparent_temperature);
+    document.getElementById('w-wind').textContent=fmtWind(c.wind_speed_10m);
+    document.getElementById('w-hum').textContent=c.relative_humidity_2m+'%';
+    document.getElementById('w-pres').textContent=Math.round(c.pressure_msl)+' hPa';
+    document.getElementById('w-rain').textContent=(c.precipitation||0).toFixed(2)+'"';
+
+    // Hourly — scrollable, start from now
+    const nowISO=new Date().toISOString().slice(0,13);
+    const nowIdx=Math.max(0,hourly.time.findIndex(t=>t.startsWith(nowISO)));
+    let hrHTML='';
+    for(let i=nowIdx;i<Math.min(nowIdx+24,hourly.time.length);i++){
+      const t=new Date(hourly.time[i]),isNow=(i===nowIdx);
+      const hr=t.getHours(),ap=hr>=12?'PM':'AM',h12=(hr%12)||12;
+      const lbl=isNow?'NOW':`${h12}${ap}`;
+      const rain=hourly.precipitation_probability[i];
+      hrHTML+=`<div class="hr-item${isNow?' now':''}">
+        <div class="hr-time">${lbl}</div>
+        <div class="hr-icon">${WMO_ICONS[hourly.weather_code[i]]||'🌡'}</div>
+        <div class="hr-temp">${fmtTemp(hourly.temperature_2m[i])}</div>
+        ${rain>10?`<div class="hr-rain">💧${rain}%</div>`:''}
+      </div>`;
+    }
+    document.getElementById('hourly-scroll').innerHTML=hrHTML;
+
+    // 5-day forecast
+    let fcHTML='';
+    for(let i=1;i<=5;i++){
+      const parts=daily.time[i].split('-');
+      const dow=new Date(+parts[0],+parts[1]-1,+parts[2]).getDay();
+      fcHTML+=`<div class="fc-day"><div class="fc-name">${DAY_NAMES[dow]}</div><div class="fc-icon">${WMO_ICONS[daily.weather_code[i]]||'🌡'}</div><div class="fc-hi">${fmtTemp(daily.temperature_2m_max[i])}</div><div class="fc-lo">${fmtTemp(daily.temperature_2m_min[i])}</div></div>`;
+    }
+    document.getElementById('forecast-row').innerHTML=fcHTML;document.getElementById('forecast-row').classList.remove('loading');
+    document.getElementById('sunrise-val').textContent=fmtTime12(daily.sunrise[0]);
+    document.getElementById('sunset-val').textContent=fmtTime12(daily.sunset[0]);
+    const srD=new Date(daily.sunrise[0]+':00');srD.setHours(srD.getHours()+1);
+    document.getElementById('sol-gold').textContent=fmtTime12(srD.toISOString().substr(0,16));
+    const dirs=['N','NE','E','SE','S','SW','W','NW'];
+    document.getElementById('sol-winddir').textContent=dirs[Math.round(c.wind_direction_10m/45)%8]+' '+fmtWind(c.wind_speed_10m);
+    computeMoon();
+  }).catch(()=>{document.getElementById('weather-desc').textContent='Weather unavailable';document.getElementById('weather-desc').classList.remove('loading');});
+}
+
+// ══════════════════════════════════════════
+//  MOON
+// ══════════════════════════════════════════
+let moonFrac=0;
+function computeMoon(){
+  const now=new Date(),known=new Date('2000-01-06T18:14:00Z'),syn=29.53058867;
+  const days=(now-known)/864e5;
+  moonFrac=((days%syn)+syn)%syn/syn;
+  const illum=Math.round((1-Math.cos(2*Math.PI*moonFrac))/2*100);
+  const phases=[[0.033,'New Moon','🌑'],[0.25,'Waxing Crescent','🌒'],[0.29,'First Quarter','🌓'],[0.5,'Waxing Gibbous','🌔'],[0.533,'Full Moon','🌕'],[0.75,'Waning Gibbous','🌖'],[0.79,'Last Quarter','🌗'],[1,'Waning Crescent','🌘']];
+  let name='Waning Crescent',emoji='🌘';
+  for(const[lim,n,e]of phases){if(moonFrac<lim){name=n;emoji=e;break;}}
+  const short=name.split(' ').slice(-1)[0];
+  document.getElementById('moon-val').textContent=emoji+' '+short;
+  document.getElementById('sol-moon').textContent=emoji+' '+short;
+  document.getElementById('sol-illum').textContent=illum+'%';
+  return{name,emoji,illum,frac:moonFrac};
+}
+
+// ══════════════════════════════════════════
+//  FISHING
+// ══════════════════════════════════════════
+const FISH_INTERVAL=5*60;
+let fishCd=FISH_INTERVAL,fishTimer=null;
+function startFishRefreshCycle(){
+  clearInterval(fishTimer);fishCd=FISH_INTERVAL;updateFishBadge();
+  fishTimer=setInterval(()=>{fishCd--;updateFishBadge();if(fishCd<=0){fishCd=FISH_INTERVAL;loadFishingWeather();}},1000);
+}
+function updateFishBadge(){const el=document.getElementById('fish-refresh-text');if(fishCd>60)el.textContent=Math.ceil(fishCd/60)+'m';else if(fishCd>0)el.textContent=fishCd+'s';else el.textContent='NOW';}
+function refreshFishingNow(){fishCd=FISH_INTERVAL;document.getElementById('fish-refresh-text').textContent='…';loadFishingWeather();}
+
+function loadFishingWeather(){
+  const url=`https://api.open-meteo.com/v1/forecast?latitude=${CFG.fishLat}&longitude=${CFG.fishLon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,pressure_msl,cloud_cover,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset&temperature_unit=celsius&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York&forecast_days=1`;
+  fetch(url).then(r=>r.json()).then(d=>{
+    speciesWeatherCache=d.current;
+    computeFishing(d);
+    document.getElementById('fish-last-update').textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  }).catch(()=>{document.getElementById('fish-report-content').innerHTML='<div class="fish-report-text" style="color:var(--bad)">⚠️ Could not load live conditions.</div>';});
+}
+
+function computeFishing(data){
+  const c=data.current,daily=data.daily;
+  const wind=c.wind_speed_10m,tempF=c.temperature_2m*9/5+32,pres=c.pressure_msl,cloud=c.cloud_cover,precip=c.precipitation||0;
+  const loc=CFG.fishName.split(',')[0].trim(),species=CFG.fishSpecies||'fish';
+  const now=new Date(),hour=now.getHours(),month=now.getMonth();
+  const moon=computeMoon();
+  const moonScore=moon.frac<0.1||moon.frac>0.9?9:Math.abs(moon.frac-0.5)<0.05?8:7;
+  const ws=wind<6?9:wind<12?8:wind<18?5:wind<25?2:1;
+  const ts=(tempF>=62&&tempF<=82)?10:(tempF>=52&&tempF<62)?7:(tempF>82&&tempF<=90)?6:3;
+  const ps=pres>1018?8:pres>1010?9:pres>1000?6:pres>990?4:2;
+  const cs=cloud<30?9:cloud<70?8:cloud<85?5:3;
+  const rainP=precip>0.1?-1.5:precip>0.02?-0.5:0;
+  const overall=Math.max(1,Math.min(10,Math.round(((ws+ts+ps+cs+moonScore)/5+rainP)*10)/10));
+  const se=document.getElementById('fish-score');
+  se.textContent=overall.toFixed(1);se.classList.remove('loading');
+  se.style.color=overall>=7.5?'var(--good)':overall>=5?'var(--warn)':'var(--bad)';
+  document.getElementById('fish-score-label').textContent=overall>=8.5?'Exceptional — go now!':overall>=7?'Good conditions':overall>=5?'Fair — be strategic':'Tough day';
+  function bar(fid,vid,score,label){document.getElementById(vid).textContent=label;const f=document.getElementById(fid);f.style.width=(score*10)+'%';f.style.background=score>=7.5?'var(--good)':score>=5?'var(--warn)':'var(--bad)';}
+  bar('fb-wind','fb-wind-val',ws,Math.round(wind)+' mph');
+  bar('fb-temp','fb-temp-val',ts,Math.round(tempF)+'°F');
+  bar('fb-pres','fb-pres-val',ps,Math.round(pres)+' hPa');
+  bar('fb-cloud','fb-cloud-val',cs,cloud+'%');
+  const srH=new Date(daily.sunrise[0]+':00').getHours(),ssH=new Date(daily.sunset[0]+':00').getHours();
+  const bw=[];
+  bw.push(`🌅 Dawn (${srH}:00–${srH+2}:00) — prime feeding`);
+  bw.push(`🌇 Dusk (${ssH-1}:00–${ssH+1}:00) — evening spike`);
+  if(moonScore>=8)bw.push('🌕 Strong moon — night fishing excellent');
+  if(pres>1012&&pres<1020)bw.push('📊 Stable pressure — regular feeding patterns');
+  if(pres<1000)bw.push('📉 Low pressure — fish moving deeper');
+  let cond='';
+  if(precip>0.05){cond+=`🌧 Raining (${precip.toFixed(2)}" last hr). `;if(pres<1005)cond+='Falling pressure may trigger pre-storm feeding.';else cond+='Try bottom rigs or slow trolling.';}
+  else if(cloud>80)cond+='☁️ Overcast — extended feeding windows, try topwater all day. ';
+  else if(cloud<30)cond+='☀️ Bright sun — target shade: docks, bridges, deep structure. ';
+  else cond+='⛅ Partly cloudy — good light for active feeding. ';
+  if(wind>15)cond+=`Wind ${Math.round(wind)} mph — seek protected water. `;
+  else if(wind<5)cond+='Calm — fish spooky, use light line. ';
+  if(tempF>85)cond+='Hot — most active at dawn/dusk. ';
+  else if(tempF<50)cond+='Cold — slow presentations near bottom. ';
+  let tech='';
+  if(tempF>=62&&tempF<=82){tech='Optimal feeding temp. ';if(cloud>50||(hour<srH+2||hour>ssH-1))tech+='Topwater plugs, poppers, soft plastics near structure. ';else tech+='Mid-column jigging, live bait, deeper structure. ';}
+  else if(tempF<55)tech='Cold: slow everything. Bottom rigs, slow-rolled plastics, channel edges. ';
+  else if(tempF>85)tech='Heat stress: fish deep or in current. Shade spots early AM. Live shrimp or cut bait on bottom. ';
+  if(pres<1002)tech+='Pre-front — fast presentations may trigger bites. ';
+  let stip='';
+  if(species&&overall>=5){stip=`${species} — `;if(overall>=7.5)stip+='active feeding throughout.';else if(overall>=5.5)stip+='target dawn/dusk windows.';else stip+='fish slow and deep today.';}
+  const tags=[];
+  if(wind<10)tags.push({t:'Calm Wind',c:'good'});else if(wind>18)tags.push({t:'High Wind',c:'bad'});
+  if(tempF>=62&&tempF<=82)tags.push({t:'Ideal Temp',c:'good'});
+  if(precip>0.05)tags.push({t:'Raining',c:'bad'});
+  if(pres>1010&&pres<1022)tags.push({t:'Stable Pressure',c:'good'});
+  if(pres<1000)tags.push({t:'Low Pressure',c:'bad'});
+  if(moon.illum>85)tags.push({t:'Full Moon',c:'good'});
+  if(cloud>50&&cloud<85)tags.push({t:'Overcast — Good',c:'good'});
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const seasonTips={0:`January: Sheepshead, black drum near structure. Shrimp or fiddler crabs.`,1:`February: Redfish and trout on warm afternoons.`,2:`March: Pre-spawn feeding — fish aggressive. Excellent topwater at dawn.`,3:`April: Spring fishing in full swing. Snook and tarpon becoming active.`,4:`May: Tarpon migration peak. Excellent snook bite.`,5:`June: Summer snook at inlets and bridges. Early morning topwater.`,6:`July: Heat slows midday bite. Dawn/dusk prime. Live bait near bridges.`,7:`August: Early morning bite critical. Live bait outperforms.`,8:`September: Fall transition — snook and redfish very active.`,9:`October: Excellent fall feeding frenzy. Multiple species very active.`,10:`November: Pre-winter feeding. Redfish and sea trout eating heavily.`,11:`December: Cooler water. Redfish and sheepshead near structure.`};
+  let html='';
+  html+=`<div class="fish-report-section"><div class="fish-report-title">📍 Conditions Now</div><div class="fish-report-text">${cond}</div></div>`;
+  if(bw.length)html+=`<div class="fish-report-section"><div class="fish-report-title">⏰ Best Bite Windows</div>${bw.map(w=>`<div class="fish-report-text" style="margin-bottom:4px">${w}</div>`).join('')}</div>`;
+  html+=`<div class="fish-report-section"><div class="fish-report-title">🎯 Technique</div><div class="fish-report-text">${tech}</div></div>`;
+  if(stip)html+=`<div class="fish-report-section"><div class="fish-report-title">🐟 Species</div><div class="fish-report-text">${stip}</div><div class="fish-report-tags">${species.split(',').map(s=>`<span class="fish-tag">${s.trim()}</span>`).join('')}</div></div>`;
+  html+=`<div class="fish-report-section"><div class="fish-report-title">📅 ${MONTHS[month]} Report</div><div class="fish-report-text">${seasonTips[month]||''}</div></div>`;
+  if(tags.length)html+=`<div class="fish-report-section"><div class="fish-report-tags">${tags.map(t=>`<span class="fish-tag ${t.c}">${t.t}</span>`).join('')}</div></div>`;
+  document.getElementById('fish-report-content').innerHTML=html;
+}
+
+// ══════════════════════════════════════════
+//  TIDES
+// ══════════════════════════════════════════
+function loadTides(){
+  const today=new Date(),tom=new Date(today);tom.setDate(today.getDate()+1);
+  const fmt=d=>`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  const url=`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=web_services&begin_date=${fmt(today)}&end_date=${fmt(tom)}&datum=MLLW&station=${CFG.tideStation}&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
+  fetch(url).then(r=>r.json()).then(d=>{
+    if(!d.predictions?.length){document.getElementById('tide-list').innerHTML="<div style='color:rgba(255,255,255,0.65);font-size:12px'>Tide data unavailable<br><small>Check tide station ID in Settings</small></div>";return;}
+    const now=new Date();
+    const up=d.predictions.filter(p=>new Date(p.t)>now).slice(0,5);
+    const show=up.length?up:d.predictions.slice(0,5);
+    document.getElementById('tide-list').innerHTML=show.map((p,idx)=>{
+      const dt=new Date(p.t);let h=dt.getHours(),m=dt.getMinutes();
+      const ap=h>=12?'PM':'AM';h=h%12||12;
+      const isNext=idx===0;
+      return `<div class="tide-item" style="${isNext?'border-color:rgba(232,201,122,0.5)':''}">
+        <div class="tide-left"><span class="tide-icon">${p.type==='H'?'📈':'📉'}</span>
+        <span class="tide-type">${p.type==='H'?'High':'Low'} Tide${isNext?' <span style="font-size:9px;color:var(--accent);margin-left:4px">▶ NEXT</span>':''}</span></div>
+        <span class="tide-time">${h}:${String(m).padStart(2,'0')} ${ap}</span>
+        <span class="tide-ht">${parseFloat(p.v).toFixed(1)} ft</span>
+      </div>`;
+    }).join('');
+  }).catch(()=>{document.getElementById('tide-list').innerHTML="<div style='color:rgba(255,255,255,0.65);font-size:12px'>Could not load tides</div>";});
+}
+
+// ══════════════════════════════════════════
+//  CALENDAR
+// ══════════════════════════════════════════
+let allEvents=[],viewMonth=new Date().getMonth(),viewYear=new Date().getFullYear();
+function parseIcal(text){
+  text=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n[ \t]/g,'');
+  const events=[];let inE=false,cur=null;
+  text.split('\n').forEach(line=>{
+    if(line==='BEGIN:VEVENT'){inE=true;cur={};return;}
+    if(line==='END:VEVENT'){if(cur?.summary)events.push(cur);inE=false;cur=null;return;}
+    if(!inE||!cur)return;
+    const ci=line.indexOf(':');if(ci===-1)return;
+    const key=line.slice(0,ci).split(';')[0].toUpperCase(),val=line.slice(ci+1).trim();
+    if(key==='SUMMARY')cur.summary=val.replace(/\\,/g,',').replace(/\\n/g,' ').replace(/\\/g,'');
+    else if(key==='DTSTART')cur.dtstart=parseIcalDt(val);
+    else if(key==='DTEND')cur.dtend=parseIcalDt(val);
+    else if(key==='UID')cur.uid=val;
+  });
+  return events;
+}
+function parseIcalDt(val){
+  val=val.replace(/^VALUE=DATE:/,'');
+  if(/^\d{8}$/.test(val))return{date:`${val.slice(0,4)}-${val.slice(4,6)}-${val.slice(6,8)}`,allDay:true};
+  const iso=`${val.slice(0,4)}-${val.slice(4,6)}-${val.slice(6,8)}T${val.slice(9,11)}:${val.slice(11,13)}:${val.slice(13,15)}${val.endsWith('Z')?'Z':''}`;
+  return{dateTime:iso,allDay:false};
+}
+function getEventDays(ev){
+  const s=ev.dtstart,e=ev.dtend;if(!s)return[];
+  const ss=s.date||(s.dateTime||'').slice(0,10);
+  let es=e?(e.date||(e.dateTime||'').slice(0,10)):ss;
+  if(s.allDay&&e?.allDay){const ed=new Date(es+'T12:00:00');ed.setDate(ed.getDate()-1);es=ed.toISOString().slice(0,10);}
+  const days=[];let cur=new Date(ss+'T12:00:00');const end=new Date(es+'T12:00:00');
+  while(cur<=end){days.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
+  if(days.length>1)ev.isMultiday=true;return days;
+}
+async function fetchIcalWithFallback(url){
+  for(const px of CORS_PROXIES){
+    try{const r=await fetch(px(url),{cache:'no-cache'});if(!r.ok)continue;const t=await r.text();if(t.includes('BEGIN:VCALENDAR')||t.includes('BEGIN:VEVENT'))return t;}catch(e){}
+  }return null;
+}
+async function loadCalendar(){
+  const st=document.getElementById('cal-status');
+  const url=CFG.icalUrl||DEFAULT_ICAL;
+  if(!url){st.textContent='⚠️ No URL';renderCal();renderUpcoming();return;}
+  st.textContent='⏳ Syncing…';st.style.color='rgba(255,255,255,0.65)';
+  const text=await fetchIcalWithFallback(url);
+  if(text){
+    allEvents=parseIcal(text);renderCal();renderUpcoming();
+    st.textContent=`✅ ${allEvents.length} events · ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+    st.style.color='var(--good)';
+  }else{
+    st.textContent='⚠️ Calendar sync failed';st.style.color='var(--bad)';
+    renderCal();renderUpcoming();
+  }
+}
+function changeViewMonth(dir){viewMonth+=dir;if(viewMonth>11){viewMonth=0;viewYear++;}if(viewMonth<0){viewMonth=11;viewYear--;}renderCal();}
+function renderCal(){
+  const now=new Date();
+  const MNS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month').textContent=`${MNS[viewMonth]} ${viewYear}`;document.getElementById('cal-month').classList.remove('loading');
+  const evByDate={};allEvents.forEach(ev=>{getEventDays(ev).forEach(ds=>{(evByDate[ds]=evByDate[ds]||[]).push(ev);});});
+  const firstDay=new Date(viewYear,viewMonth,1).getDay(),dIM=new Date(viewYear,viewMonth+1,0).getDate(),dPM=new Date(viewYear,viewMonth,0).getDate();
+  let html=DAY_NAMES.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<firstDay;i++)html+=`<div class="cal-day other-month"><div class="cal-day-num">${dPM-firstDay+1+i}</div></div>`;
+  for(let day=1;day<=dIM;day++){
+    const isToday=day===now.getDate()&&viewMonth===now.getMonth()&&viewYear===now.getFullYear();
+    const ds=`${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const evs=evByDate[ds]||[];
+    let evH=evs.slice(0,3).map(ev=>`<div class="cal-event${ev.isMultiday?' multiday':''}" title="${ev.summary}">${ev.summary}</div>`).join('');
+    if(evs.length>3)evH+=`<div class="cal-more">+${evs.length-3} more</div>`;
+    html+=`<div class="cal-day${isToday?' today':''}"><div class="cal-day-num">${day}</div><div class="cal-events">${evH}</div></div>`;
+  }
+  const rem=(firstDay+dIM)%7===0?0:7-(firstDay+dIM)%7;
+  for(let i=1;i<=rem;i++)html+=`<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+  document.getElementById('cal-grid').innerHTML=html;
+}
+function renderUpcoming(){
+  const now=new Date(),today=now.toISOString().slice(0,10);
+  const up=allEvents.filter(ev=>{const ds=ev.dtstart?.date||(ev.dtstart?.dateTime||'').slice(0,10);return ds>=today;})
+    .sort((a,b)=>{const da=a.dtstart?.date||a.dtstart?.dateTime||'',db=b.dtstart?.date||b.dtstart?.dateTime||'';return da.localeCompare(db);}).slice(0,5);
+  const listEl=document.getElementById('upcoming-list');
+  if(!up.length){listEl.innerHTML=`<div style="color:rgba(255,255,255,0.55);font-size:12px;font-style:italic">No upcoming events</div>`;return;}
+  const MOS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  listEl.innerHTML=up.map(ev=>{
+    const ds=ev.dtstart?.date||(ev.dtstart?.dateTime||'').slice(0,10);let label='';
+    if(ds){const d=new Date(ds+'T12:00:00');label=`${MOS[d.getMonth()]} ${d.getDate()}`;}
+    if(ev.dtstart?.dateTime&&!ev.dtstart?.allDay){const t=new Date(ev.dtstart.dateTime);let h=t.getHours(),m=t.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;label+=` · ${h}:${String(m).padStart(2,'0')} ${ap}`;}
+    return `<div class="upcoming-item"><div class="upcoming-date">${label}</div><div class="upcoming-title">${ev.summary||'(No title)'}</div></div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+viewMonth=new Date().getMonth();viewYear=new Date().getFullYear();
+window.addEventListener('load',()=>{
+  initCarousel();
+  loadWeather();loadFishingWeather();loadTides();loadCalendar();startFishRefreshCycle();
+  // Load species guide after a short delay so weather data is available
+  setTimeout(()=>loadSpeciesGuide(false),3500);
+});
+setInterval(loadCalendar,3*60*1000);
+setInterval(()=>{loadWeather();loadTides();},10*60*1000);
+setInterval(()=>{speciesLoaded=false;loadSpeciesGuide(false);},30*60*1000);
+</script>
+</body>
+</html>
