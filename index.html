@@ -880,8 +880,8 @@ Return ONLY valid JSON (no markdown, no explanation):
 
   try {
     if(!CFG.geminiKey)throw new Error('No API key');
-    const resp = await fetch(
-  `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=YOUR_KEY`,
+   const resp = await fetch(
+  `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${CFG.geminiKey}`,
   {
     method: "POST",
     headers: { "Content-Type": "application/json" },
