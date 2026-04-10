@@ -661,27 +661,7 @@ if (cached) {
   const location = CFG.fishName;
 
   // ✅ CACHE CHECK (this stops API spam)
-  const cached = localStorage.getItem(SPECIES_CACHE_KEY);
-
-  if (cached) {
-    try {
-      const parsedCache = JSON.parse(cached);
-
-      if (Date.now() - parsedCache.timestamp < SPECIES_CACHE_TIME) {
-        console.log("Using cached AI data");
-
-        renderSpecies(parsedCache.data.species);
-        _speciesHasContent = true;
-
-        aiText.textContent = 'CACHED';
-        locSub.textContent = location + ' · ' + MONTHS[month];
-
-        _speciesIsLoading = false;
-        return;
-      }
-    } catch(e) {}
-  }
-
+  
   locSub.textContent = location + ' — AI analysis…';
   loadingEl.style.display = 'flex';
   errorEl.style.display = 'none';
