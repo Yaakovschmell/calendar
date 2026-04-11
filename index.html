@@ -53,19 +53,19 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
   display:flex;
   flex-direction:column;
   gap:10px;
-  overflow-y:auto;
-  overflow-x:hidden;
-  min-height:0;
+  overflow:hidden;
 }
-  #panel-species .wcard {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 6px;
+#panel-species .wcard {
+  overflow: hidden;
+  position: relative;
 }
-.wcard { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.14); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-radius:var(--radius); padding:14px 15px; flex-shrink:0; box-shadow:var(--shadow-card); }
-.wlabel { font-size:9px; font-weight:600; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:10px; text-shadow:0 1px 8px rgba(0,0,0,0.9); }
 
+#species-content {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  will-change: transform;
+}
 #weather-main-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
 #weather-icon { font-size:40px; line-height:1; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8)); }
 #weather-temp { font-family:var(--font-serif); font-size:48px; font-weight:400; line-height:1; text-shadow:var(--shadow-text); }
@@ -725,6 +725,7 @@ function renderSpeciesEngine() {
       const cls = f.delta>=8?'sf-good':f.delta>=4?'sf-warn':'sf-bad';
       return `<span class="species-factor ${cls}">${f.label}: ${f.note}</span>`;
     }).join('');
+    
     const noteHTML = s.note ? `<div class="species-detail" style="color:rgba(255,200,120,0.9);font-style:italic">⚠️ ${s.note.slice(0,90)}${s.note.length>90?'…':''}</div>` : '';
     const tacticHTML = s.tactics.map(t=>`<span class="species-factor sf-warn">→ ${t}</span>`).join('');
     return `<div class="species-item">
@@ -742,7 +743,8 @@ function renderSpeciesEngine() {
       <div class="species-factors" style="margin-top:4px">${tacticHTML}</div>
     </div>`;
   }).join('');
-
+  
+setupSpeciesAutoScroll();
   document.getElementById('species-location-sub').textContent =
     `${CFG.fishName} · ${MONTHS[cond.month]}`
     + (cond.tempF ? ` · ${cond.tempF}°F` : '')
@@ -1262,7 +1264,56 @@ function renderCal(){
   for(let i=1;i<=rem;i++)html+=`<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
   document.getElementById('cal-grid').innerHTML=html;
 }
+function setupSpeciesAutoScroll() {
+  const container = document.querySelector('#panel-species .wcard');
+  const content = document.getElementById('species-content');
 
+  if (!container || !content) return;
+
+  content.style.transition = 'none';
+  content.style.transform = 'translateY(0)';
+
+  const visibleHeight = container.clientHeight - 20;
+  const contentHeight = content.scrollHeight;
+  const overflow = contentHeight - visibleHeight;
+
+  if (overflow <= 0) return;
+
+  const pixelsPerSecond = 28;
+  const travelTime = overflow / pixelsPerSecond;
+
+  let state = 'top';
+
+  function loopScroll() {
+    if (state === 'top') {
+      setTimeout(() => {
+        content.style.transition = `transform ${travelTime}s linear`;
+        content.style.transform = `translateY(-${overflow}px)`;
+        state = 'bottom';
+      }, 2500);
+    } else {
+      setTimeout(() => {
+        content.style.transition = 'none';
+        content.style.transform = 'translateY(0)';
+        state = 'top';
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(loopScroll);
+        });
+      }, 2500);
+    }
+  }
+
+  content.addEventListener('transitionend', function handler() {
+    content.removeEventListener('transitionend', handler);
+
+    if (state === 'bottom') {
+      loopScroll();
+    }
+  });
+
+  loopScroll();
+}
 function renderUpcoming(){
   const now=new Date(),today=now.toISOString().slice(0,10);
   const up=allEvents
