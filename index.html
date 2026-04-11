@@ -55,20 +55,22 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
   gap:10px;
   overflow:hidden;
 }
-#panel-species .wcard {
+##panel-species .wcard {
   overflow: hidden;
   position: relative;
-  padding-top: 52px;
+}
+
+.species-scroll-window {
+  position: relative;
+  overflow: hidden;
+  height: calc(100% - 85px);
 }
 
 #species-content {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 10px;
   will-change: transform;
-
-  position: relative;
-  margin-top: 8px;
 }
 #weather-main-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
 #weather-icon { font-size:40px; line-height:1; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8)); }
@@ -303,21 +305,30 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
           </div>
         </div>
 
-        <!-- PANEL 2: SPECIES ENGINE -->
-        <div class="carousel-panel" id="panel-species">
-          <div class="wcard">
-            <div class="species-header-row">
-              <div class="wlabel" style="margin-bottom:0">🐟 Species Conditions</div>
-              <div id="species-live-badge" onclick="renderSpeciesEngine()">
-                <div class="slive-dot"></div>
-                <span id="species-live-text">LIVE</span>
-              </div>
-            </div>
-            <div id="species-location-sub">Loading…</div>
-            <div id="species-content"><div class="loading" style="font-size:12px;padding:12px 0">Loading conditions…</div></div>
-            <div id="species-last-update"></div>
-          </div>
+       <!-- PANEL 2: SPECIES ENGINE -->
+<div class="carousel-panel" id="panel-species">
+  <div class="wcard">
+    <div class="species-header-row">
+      <div class="wlabel" style="margin-bottom:0">🐟 Species Conditions</div>
+      <div id="species-live-badge" onclick="renderSpeciesEngine()">
+        <div class="slive-dot"></div>
+        <span id="species-live-text">LIVE</span>
+      </div>
+    </div>
+
+    <div id="species-location-sub">Loading…</div>
+
+    <div class="species-scroll-window">
+      <div id="species-content">
+        <div class="loading" style="font-size:12px;padding:12px 0">
+          Loading conditions…
         </div>
+      </div>
+    </div>
+
+    <div id="species-last-update"></div>
+  </div>
+</div>
 
         <!-- PANEL 3: TIDES -->
         <div class="carousel-panel" id="panel-tides">
