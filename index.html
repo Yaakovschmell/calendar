@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,7 +56,7 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
   gap:10px;
   overflow:hidden;
 }
-#panel-species .wcard {
+##panel-species .wcard {
   overflow: hidden;
   position: relative;
 }
@@ -759,7 +760,7 @@ function renderSpeciesEngine() {
     </div>`;
   }).join('');
   
-//setupSpeciesAutoScroll();
+setupSpeciesAutoScroll();
   document.getElementById('species-location-sub').textContent =
     `${CFG.fishName} · ${MONTHS[cond.month]}`
     + (cond.tempF ? ` · ${cond.tempF}°F` : '')
@@ -1280,7 +1281,8 @@ function renderCal(){
   document.getElementById('cal-grid').innerHTML=html;
 }
 function setupSpeciesAutoScroll() {
-const container = document  const content = document.getElementById('species-content');
+  const container = document.querySelector('#panel-species .wcard');
+  const content = document.getElementById('species-content');
 
   if (!container || !content) return;
 
