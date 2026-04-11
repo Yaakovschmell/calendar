@@ -462,17 +462,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
     </div>
 
     <div class="s-section">
-      <div class="s-section-title">🤖 AI Species Guide</div>
-      <div class="s-grid">
-        <div class="s-field full">
-          <label>Gemini API Key</label>
-          <input id="s-gemini-key" type="password" placeholder="Paste your Gemini API key here">
-          <div class="s-note">Free from <strong>aistudio.google.com/apikey</strong> — required for AI species recommendations.</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="s-section">
       <div class="s-section-title">📅 Google Calendar</div>
       <div class="s-grid">
         <div class="s-field full">
@@ -556,13 +545,13 @@ function guessSpecies(lat, lon, name) {
 }
 
 const DEFAULTS = {
-  city:'Jupiter, Florida', lat:26.9342, lon:-80.0942,
-  fishName:'Juno Beach, Florida', fishLat:26.8701, fishLon:-80.0534,
-  fishSpecies:'Snook, tarpon, redfish, flounder',
-  tideStation:'8722669',
+  city:'Baltimore, Maryland', lat:39.2904, lon:-76.6122,
+  fishName:'Dundee Creek, Maryland', fishLat:39.3254, fishLon:-76.4197,
+  fishSpecies:'Striped bass, white perch, catfish, bluefish',
+  tideStation:'8574680',
   icalUrl:DEFAULT_ICAL, bg:DEFAULT_BG,
   accentColor:'#e8c97a', timeFmt:'12', tempUnit:'F',
-  geminiKey:'',
+  
 };
 function getCFG() {
   try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('fishDash11')||'{}')); }
@@ -589,239 +578,362 @@ let _speciesLastDone   = 0;       // timestamp of last successful/failed complet
 let _speciesHasContent = false;   // true once content has been rendered at least once
 let _speciesNextAllowed = 0;      // absolute timestamp before which no new call is allowed
 
-/** Called by manual REFRESH button — forces a new call if not locked/throttled */
+/** Called by manual REFRESH button */
 function speciesManualRefresh() {
-  const now = Date.now();
-  if (_speciesIsLoading) {
-    console.log('[species] Ignored manual refresh — already loading');
-    return;
-  }
-  const waitUntil = Math.max(_speciesLastDone + SPECIES_COOLDOWN_MS, _speciesNextAllowed);
-  if (now < waitUntil) {
-    const wait = Math.ceil((waitUntil - now) / 1000);
-    console.log(`[species] Ignored manual refresh — cooldown (${wait}s left)`);
-    document.getElementById('species-ai-text').textContent = `WAIT ${wait}s`;
-    setTimeout(() => {
-      const el = document.getElementById('species-ai-text');
-      if (el) el.textContent = 'REFRESH';
-    }, waitUntil - now);
-    return;
-  }
-  // Clear backoff so a manual retry always gets a real attempt
-  _speciesNextAllowed = 0;
-  // Claim the lock SYNCHRONOUSLY before any async work
-  _speciesIsLoading = true;
-  _loadSpeciesGuide();
+  _speciesHasContent = false;
+  loadSpeciesLocal();
 }
 
-/** Called automatically (panel navigation, settings save, periodic refresh).
- *  Skips silently if content already exists and cooldown has not elapsed.
- *  Always checks the day-cache first so a rate-limited session never
- *  blocks a fresh page load from showing cached content. */
+/** Called automatically by carousel / settings */
 function speciesAutoLoad() {
-  const now = Date.now();
-  if (_speciesIsLoading) {
-    console.log('[species] Auto-load skipped — already loading');
-    return;
-  }
-
-  // Always try the day-cache first — even during backoff.
-  // If we have today's data cached, render it immediately without touching the API.
-  try {
-    const speciesList = CFG.fishSpecies || 'Snook, tarpon, redfish, flounder';
-    const location    = CFG.fishName;
-    const cacheKey    = 'speciesCache_' + location.replace(/\W/g,'').slice(0,20) + '_' + speciesList.length;
-    const todayStr    = new Date().toISOString().slice(0, 10);
-    const raw         = localStorage.getItem(cacheKey);
-    if (raw) {
-      const cached = JSON.parse(raw);
-      if (cached.date === todayStr && Array.isArray(cached.species) && cached.species.length) {
-        if (!_speciesHasContent) {
-          console.log('[species] Auto-load: serving from day-cache (no API call)');
-          renderSpecies(cached.species);
-          _speciesHasContent = true;
-          const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-          document.getElementById('species-ai-text').textContent = 'TODAY';
-          document.getElementById('species-error').style.display = 'none';
-          document.getElementById('species-location-sub').textContent = location + ' · ' + MONTHS[new Date().getMonth()];
-          document.getElementById('species-last-update').textContent =
-            'Cached today at ' + new Date(cached.savedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-          document.getElementById('species-loading').style.display = 'none';
-        }
-        return; // Either way, don't hit the API
-      }
-    }
-  } catch(e) { /* cache read failed, fall through to API */ }
-
-  const waitUntil = Math.max(_speciesLastDone + SPECIES_COOLDOWN_MS, _speciesNextAllowed);
-  if (_speciesHasContent && now < waitUntil) {
-    console.log('[species] Auto-load skipped — content fresh or in backoff');
-    return;
-  }
-  if (!_speciesHasContent && now < _speciesNextAllowed) {
-    console.log('[species] Auto-load skipped — in rate-limit backoff');
-    return;
-  }
-  // Claim the lock SYNCHRONOUSLY before any async work
-  _speciesIsLoading = true;
-  _loadSpeciesGuide();
+  if (_speciesHasContent) return;
+  loadSpeciesLocal();
 }
 
-/** The actual fetch — lock is already set by caller; this just runs the request. */
-async function _loadSpeciesGuide() {
-  const loadingEl  = document.getElementById('species-loading');
-  const errorEl    = document.getElementById('species-error');
-  const aiText     = document.getElementById('species-ai-text');
-  const locSub     = document.getElementById('species-location-sub');
+// ── SPECIES DATABASE: region-aware, weather-driven ───────────────────────────
+// Each species has TWO region profiles: chesapeake (Mid-Atlantic/Bay) and
+// florida (Gulf/Atlantic FL). The correct one is auto-selected from your
+// fishing location coordinates. Season arrays are Jan-Dec, 1=slow 2=good 3=peak.
+const SPECIES_PROFILES = {
 
-  const now   = new Date(), month = now.getMonth(), hour = now.getHours();
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const speciesList = CFG.fishSpecies || 'Snook, tarpon, redfish, flounder';
-  const location    = CFG.fishName;
+  'striped bass': {
+    chesapeake: {
+      season:  [2,2,3,3,3,2,1,1,2,3,3,2],
+      baits:   ['Bloodworms','Live spot','Bucktail jig + twister','Bunker chunks','Soft plastic paddle tail','Topwater plug'],
+      spots:   ['Susquehanna Flats (Apr–May)','Bay Bridge pilings','Mouth of the Patuxent','Rocky bottom in 15–30ft','Chesapeake & Delaware Canal','Tidal creeks on falling tide'],
+      tactics: ['Chunk bloodworm on bottom in spring','Vertical jig over schools','Troll parachutes in fall','Work bucktail through current seams','Cast topwater at dawn during blitzes'],
+      hotTemp: [45, 65],
+      coldNote: 'Stripers love cold water — winter is prime. Fish deep channel edges with slow jigs.',
+      hotNote:  'Stripers move deep or north in summer. Target cooler river mouths and deep structure early AM.',
+    },
+    florida: {
+      season:  [1,1,1,1,1,1,1,1,1,1,1,1],
+      baits:   ['Live shad','Bucktail jig'],
+      spots:   ['Deep river channels','Power plant discharge'],
+      tactics: ['Slow jig near bottom','Chunk near structure'],
+      hotTemp: [50, 68],
+      coldNote: 'Very rare in Florida — occasional visitors to St. Johns River.',
+      hotNote:  'Not a target species in Florida waters.',
+    },
+  },
 
-  // ── CHECK LOCALSTORAGE DAY-CACHE FIRST ─────────────────────────
-  // Cache key includes location+species so changing either busts the cache.
-  const cacheKey = 'speciesCache_' + location.replace(/\W/g,'').slice(0,20) + '_' + speciesList.length;
-  const todayStr = now.toISOString().slice(0, 10); // e.g. "2026-04-10"
-  try {
-    const raw = localStorage.getItem(cacheKey);
-    if (raw) {
-      const cached = JSON.parse(raw);
-      if (cached.date === todayStr && Array.isArray(cached.species) && cached.species.length) {
-        console.log('[species] Serving from day-cache');
-        renderSpecies(cached.species);
-        _speciesHasContent = true;
-        aiText.textContent = 'TODAY';
-        errorEl.style.display = 'none';
-        locSub.textContent = location + ' · ' + MONTHS[month];
-        document.getElementById('species-last-update').textContent =
-          'Cached today at ' + new Date(cached.savedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-        _speciesIsLoading = false;
-        _speciesLastDone  = Date.now();
-        loadingEl.style.display = 'none';
-        return;
-      }
-    }
-  } catch(cacheErr) { /* corrupt cache, proceed to fetch */ }
-  // ───────────────────────────────────────────────────────────────
+  'white perch': {
+    chesapeake: {
+      season:  [2,3,3,3,2,2,1,1,2,2,3,2],
+      baits:   ['Bloodworms','Grass shrimp','Small jigs','Minnows','Wax worms'],
+      spots:   ['Tidal rivers (Patuxent, Choptank)','Piers and docks','Shallow flats in spring','Bridge pilings','Dundee Creek','Middle River'],
+      tactics: ['Fish bloodworms on bottom near piers','Drift grass shrimp in current','Light jig under a float','Target spawning runs in March–April'],
+      hotTemp: [50, 72],
+      coldNote: 'White perch school up in deep holes in winter — still catchable.',
+      hotNote:  'Move to shaded deeper water. Early morning bite is best.',
+    },
+    florida: { season:[1,1,1,1,1,1,1,1,1,1,1,1], baits:['N/A'], spots:['Not present'], tactics:['Not a Florida species'], hotTemp:[50,70], coldNote:'Not present.', hotNote:'Not present.' },
+  },
 
-  locSub.textContent = location + ' — AI analysis in progress…';
-  loadingEl.style.display = 'flex';
-  errorEl.style.display   = 'none';
-  aiText.textContent = 'LOADING…';
+  'catfish': {
+    chesapeake: {
+      season:  [2,2,3,3,2,2,2,2,3,3,2,2],
+      baits:   ['Chicken liver','Cut shad','Bloodworms','Stinkbait','Nightcrawlers','Cut menhaden'],
+      spots:   ['Deep channel holes','Patapsco River','Gunpowder River','Under bridges at night','Tidal creek bends','Bottom of boat ramps'],
+      tactics: ['Fish chicken liver on bottom at night','Drift cut shad in channels','Set multiple rods on bottom','Target deep holes after rain runoff'],
+      hotTemp: [55, 82],
+      coldNote: 'Catfish slow down in winter but are still catchable in deep holes with cut bait.',
+      hotNote:  'Night fishing is best in summer heat. Use smelly baits.',
+    },
+    florida: {
+      season:  [2,2,2,3,3,3,2,2,2,2,2,2],
+      baits:   ['Cut mullet','Chicken liver','Nightcrawlers','Shrimp'],
+      spots:   ['Freshwater canals','River bends','Deep holes under bridges'],
+      tactics: ['Bottom rig with cut bait','Fish at night near lights','Drift in current'],
+      hotTemp: [60, 85],
+      coldNote: 'Still active in mild Florida winters.',
+      hotNote:  'Night fishing near lights is very productive.',
+    },
+  },
 
-  let weatherCtx = '';
-  if (speciesWeatherCache) {
-    const c = speciesWeatherCache;
-    const tempF = Math.round(c.temperature_2m * 9/5 + 32);
-    const wmoDesc = {0:'clear',1:'mostly clear',2:'partly cloudy',3:'overcast',61:'raining',63:'raining',65:'heavy rain',80:'showery',81:'rainy',82:'heavy showers',95:'thunderstorm'};
-    weatherCtx = `Current weather: ${tempF}°F, ${wmoDesc[c.weather_code]||'cloudy'}, wind ${Math.round(c.wind_speed_10m)} mph, pressure ${Math.round(c.pressure_msl)} hPa, ${c.cloud_cover}% clouds, ${(c.precipitation||0).toFixed(2)}" precip.`;
+  'bluefish': {
+    chesapeake: {
+      season:  [1,1,1,2,3,3,2,2,3,3,2,1],
+      baits:   ['Cut bunker','Metal spoon','Popper','Bucktail jig','Wire-leader rig with mullet'],
+      spots:   ['Bay Bridge area','Poplar Island','Eastern Shore shoals','Open bay during blitzes','Chesapeake Bay mouth'],
+      tactics: ['Cast metal spoons to blitzing fish','Chum with bunker chunks','Troll Clark spoons','Work poppers fast on surface','Use wire leader — bluefish will cut mono'],
+      hotTemp: [55, 74],
+      coldNote: 'Bluefish mostly offshore in winter.',
+      hotNote:  'Morning blitzes near Bay Bridge. Fast retrieve is key.',
+    },
+    florida: {
+      season:  [2,2,1,1,1,1,1,1,2,3,3,2],
+      baits:   ['Metal spoon','Poppers','Bunker','Fast-retrieved streamer'],
+      spots:   ['Nearshore reefs','Inlets','Open beach','Jetties'],
+      tactics: ['Fast retrieve always','Cast to birds','Troll spoons','Use wire leader'],
+      hotTemp: [58, 74],
+      coldNote: 'Fall and winter best in Florida.',
+      hotNote:  'Move offshore in summer heat.',
+    },
+  },
+
+  'snook': {
+    chesapeake: { season:[1,1,1,1,1,1,1,1,1,1,1,1], baits:['N/A'], spots:['Not present in Chesapeake'], tactics:['Snook not found in Mid-Atlantic waters'], hotTemp:[72,88], coldNote:'Snook are a Florida/Gulf species only.', hotNote:'Snook are a Florida/Gulf species only.' },
+    florida: {
+      season:  [1,1,2,2,3,3,3,3,2,2,1,1],
+      baits:   ['Live pilchards','DOA shrimp','Mirrolure','Scaled sardines','Live pinfish'],
+      spots:   ['Inlet jetties','Mangrove shorelines','Bridge pilings','Dock lights at night','Pass edges on outgoing tide'],
+      tactics: ['Slow retrieve along mangroves','Work current edges at inlets','Night fish under dock lights','Freeline live bait past structure','Present bait in current seam'],
+      hotTemp: [72, 88],
+      coldNote: 'Move to warm-water discharge areas. Very sluggish below 60°F — snook can die in cold snaps.',
+      hotNote:  'Dawn and dusk only in peak summer. Target shaded structure and inlets.',
+    },
+  },
+
+  'tarpon': {
+    chesapeake: { season:[1,1,1,1,1,1,1,1,1,1,1,1], baits:['N/A'], spots:['Not present'], tactics:['Tarpon are a Florida/Gulf species'], hotTemp:[74,90], coldNote:'Tarpon not found in Chesapeake.', hotNote:'Tarpon not found in Chesapeake.' },
+    florida: {
+      season:  [1,1,1,2,3,3,3,2,1,1,1,1],
+      baits:   ['Live crabs','Live mullet','Threadfin herring','Pass crabs','Large live shrimp'],
+      spots:   ['Passes and inlets','Bridge shadows at dawn','Flats edges','Channels 10–20ft','Boca Grande Pass'],
+      tactics: ['Present bait in current seam','Sight-fish rolling fish at dawn','Dead-drift crab under a cork','Slow-pitch jig in passes'],
+      hotTemp: [74, 90],
+      coldNote: 'Tarpon absent below 68°F — not worth targeting in winter.',
+      hotNote:  'Most active first light and last hour of daylight. Peak May–July.',
+    },
+  },
+
+  'redfish': {
+    chesapeake: { season:[1,1,1,1,1,1,1,1,1,1,1,1], baits:['N/A'], spots:['Not present'], tactics:['Redfish are a Gulf/South Atlantic species'], hotTemp:[60,85], coldNote:'Not present in Chesapeake.', hotNote:'Not present in Chesapeake.' },
+    florida: {
+      season:  [2,2,2,2,2,1,1,2,3,3,3,2],
+      baits:   ['Gold spoon','DOA CAL shad','Live shrimp','Crab','Mullet chunks'],
+      spots:   ['Shallow grass flats 1–3ft','Oyster bars','Mangrove potholes','Tailing fish on flats','Creeks on falling tide'],
+      tactics: ['Cast ahead of tailing fish','Work gold spoon across flats','Popping cork over grass','Slow roll soft plastic along bottom'],
+      hotTemp: [60, 85],
+      coldNote: 'Move to deep creek bends and sunny shallow flats on warm afternoons.',
+      hotNote:  'Fish very early or late. Look for schools in cuts and creeks.',
+    },
+  },
+
+  'flounder': {
+    chesapeake: {
+      season:  [1,1,2,3,3,3,2,2,3,3,2,1],
+      baits:   ['Bucktail jig + Gulp minnow','Live minnow','Squid strips','Berkley Gulp swimming mullet','Nightcrawler on spinner rig'],
+      spots:   ['Mouth of the Patuxent','Chesapeake Bay Bridge-Tunnel','Sandy shoals near channel edges','Thomas Point Shoal','Inlet mouths','Drop-offs at grass edges'],
+      tactics: ['Drag bucktail slowly along bottom','Bounce jig off sandy bottom','Drift with live minnow on bottom rig','Fish tide changes near structure','Work the upcurrent side of points'],
+      hotTemp: [58, 76],
+      coldNote: 'Flounder migrate offshore to spawn in late fall — tough to find Nov–Feb.',
+      hotNote:  'Target deep cool water near inlets. Dawn and dusk.',
+    },
+    florida: {
+      season:  [2,2,2,2,1,1,1,1,2,3,3,2],
+      baits:   ['Live finger mullet','Gulp! shrimp','Mud minnows','Swimming mullet jig'],
+      spots:   ['Sandy bottom near structure','Inlet mouths','Drop-offs beside flats','Bridge pilings','Jetty bases'],
+      tactics: ['Drag bait slowly along bottom','Bounce jig near structure','Fish the drop on outgoing tide'],
+      hotTemp: [58, 78],
+      coldNote: 'Flounder migrate offshore in winter in Florida too.',
+      hotNote:  'Deep cool water near inlets in summer.',
+    },
+  },
+
+  'cobia': {
+    chesapeake: {
+      season:  [1,1,1,2,3,3,2,1,1,1,1,1],
+      baits:   ['Live eel','Peeler crab','Large bucktail jig','Live spot','Bunker'],
+      spots:   ['Bay Bridge area (May–June)','Following rays in open bay','Buoys and channel markers','Chesapeake Bay mouth','Open water near crab pot lines'],
+      tactics: ['Follow cownose rays and cast ahead','Free-line live eel near structure','Vertical jig near buoys','Sight cast to cruising fish on surface'],
+      hotTemp: [65, 80],
+      coldNote: 'Cobia absent in cold months — they migrate south.',
+      hotNote:  'Peak May–June in the Bay. Follow rays north in summer.',
+    },
+    florida: {
+      season:  [1,1,2,3,3,2,1,1,1,1,1,1],
+      baits:   ['Live eel','Crab','Large bucktail jig','Live pinfish'],
+      spots:   ['Near buoys','Following rays and sharks','Nearshore reefs','Cobia towers at inlets'],
+      tactics: ['Present near rays and sharks','Vertical jig near buoys','Free-line live eel'],
+      hotTemp: [68, 82],
+      coldNote: 'Mostly offshore in winter.',
+      hotNote:  'Peak spring migration following rays nearshore.',
+    },
+  },
+
+  'bass': {
+    chesapeake: {
+      season:  [2,3,3,3,2,2,1,1,2,3,3,2],
+      baits:   ['Plastic worm','Spinnerbait','Topwater frog','Football jig','Crankbait','Swimbait'],
+      spots:   ['Loch Raven Reservoir','Liberty Reservoir','Triadelphia Reservoir','Tidal Potomac River','Dock pilings on tidal creeks','Mattawoman Creek'],
+      tactics: ['Flip and pitch to heavy cover','Work topwater at dawn','Slow roll spinnerbait along bottom','Drop shot near points and ledges','Frog over lily pads'],
+      hotTemp: [62, 80],
+      coldNote: 'Suspend jerkbaits near bottom. Fish very slowly near structure.',
+      hotNote:  'Dawn topwater only. Move to deep structure 20ft+ by 9AM.',
+    },
+    florida: {
+      season:  [2,3,3,3,2,2,1,1,2,3,3,2],
+      baits:   ['Plastic worm','Spinnerbait','Topwater frog','Jig','Crankbait'],
+      spots:   ['Vegetation edges','Dock pilings','Laydowns','Lily pad fields','Hydrilla mats'],
+      tactics: ['Flip and pitch to heavy cover','Work topwater at dawn','Punch through mats with heavy jig'],
+      hotTemp: [62, 82],
+      coldNote: 'Slow presentations near bottom.',
+      hotNote:  'Dawn topwater. Move to deep structure midday.',
+    },
+  },
+
+  'trout': {
+    chesapeake: {
+      season:  [2,2,3,3,2,1,1,1,2,3,3,2],
+      baits:   ['Berkley gulp shrimp','Soft plastic paddle tail','Bucktail jig','Peeler crab chunks','Nightcrawler'],
+      spots:   ['Shallows of Eastern Bay','Harris Creek','Tred Avon River','Grass beds in 4–8ft','Tangier Sound'],
+      tactics: ['Slow swim just above grass','Bounce soft plastic off bottom','Fish popping cork over grass flats','Work current edges near oyster bars'],
+      hotTemp: [52, 72],
+      coldNote: 'Weakfish/trout bite slows in winter but deep channel fish are still catchable.',
+      hotNote:  'Move to deeper grass and shade. Early morning only.',
+    },
+    florida: {
+      season:  [3,3,2,2,1,1,1,1,2,2,3,3],
+      baits:   ['DOA shrimp','Mirrolure MR17','Berkley gulp shrimp','Popping cork + shrimp'],
+      spots:   ['Grass flats 2–5ft','Oyster bars at low tide','Shallow bays in cool months'],
+      tactics: ['Slow twitch under popping cork','Walk-the-dog on calm mornings'],
+      hotTemp: [58, 78],
+      coldNote: 'Best bite in cool months — trout love winter in Florida.',
+      hotNote:  'Move to deeper grass. Early morning only in summer.',
+    },
+  },
+
+  'perch': {
+    chesapeake: {
+      season:  [2,3,3,3,2,2,1,1,2,2,3,2],
+      baits:   ['Bloodworms','Grass shrimp','Small jigs','Minnows','Wax worms'],
+      spots:   ['Tidal rivers (Patuxent, Choptank)','Dundee Creek','Middle River','Back River','Piers and docks','Bridge pilings'],
+      tactics: ['Fish bloodworms on bottom near piers','Drift grass shrimp in current','Light jig under a float','Target spawning runs March–April in rivers'],
+      hotTemp: [50, 72],
+      coldNote: 'White perch school up in deep holes in winter — still catchable.',
+      hotNote:  'Move to shaded deeper water. Early morning bite is best.',
+    },
+    florida: { season:[1,1,1,1,1,1,1,1,1,1,1,1], baits:['N/A'], spots:['Not common in Florida'], tactics:['Not a target Florida species'], hotTemp:[50,72], coldNote:'Not present.', hotNote:'Not present.' },
+  },
+
+};
+
+// Detect region from fishing location coordinates
+function detectRegion() {
+  const lat = CFG.fishLat || CFG.lat || 39;
+  const lon = CFG.fishLon || CFG.lon || -76;
+  // Mid-Atlantic / Chesapeake: roughly lat 36-42, lon -77 to -74
+  if (lat >= 36 && lat <= 42 && lon >= -78 && lon <= -73) return 'chesapeake';
+  // Florida
+  if (lat >= 24 && lat <= 31 && lon >= -88 && lon <= -79) return 'florida';
+  // Gulf Coast
+  if (lat >= 25 && lat <= 33 && lon >= -98 && lon <= -85) return 'florida'; // use florida profile
+  // Default: if north of 35, chesapeake; south, florida
+  return lat >= 35 ? 'chesapeake' : 'florida';
+}
+
+function getSpeciesData(name) {
+  const n = name.toLowerCase().trim();
+  const region = detectRegion();
+  // Exact match
+  if (SPECIES_PROFILES[n]) return SPECIES_PROFILES[n][region];
+  // Partial match
+  for (const key of Object.keys(SPECIES_PROFILES)) {
+    if (n.includes(key) || key.includes(n)) return SPECIES_PROFILES[key][region];
   }
-  const moonInfo = computeMoon();
+  return null;
+}
 
-  const prompt = `You are an expert fishing guide at ${location}. Today is ${MONTHS[month]}, time is ${hour}:00.
-${weatherCtx}
-Moon: ${moonInfo.name} (${moonInfo.illum}% lit).
-Species to report on: ${speciesList}.
+function loadSpeciesLocal() {
+  const now    = new Date();
+  const month  = now.getMonth();
+  const hour   = now.getHours();
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const location    = CFG.fishName;
+  const region      = detectRegion();
+  const speciesList = (CFG.fishSpecies || 'Striped bass, white perch, catfish, bluefish')
+                        .split(',').map(s => s.trim()).filter(Boolean);
 
-Return ONLY valid JSON (no markdown, no explanation):
-{
-  "species": [
-    {
-      "name": "Species Name",
-      "status": "peak OR good OR slow",
-      "summary": "2 specific sentences about catching this species RIGHT NOW at ${location} in ${MONTHS[month]} given these conditions",
-      "tactics": ["tactic 1", "tactic 2", "tactic 3"],
-      "bait": "best bait or lure right now",
-      "spot": "specific type of spot to target",
-      "time": "best time today"
-    }
-  ]
-}`;
+  // Live weather
+  const wx    = speciesWeatherCache;
+  const tempF = wx ? Math.round(wx.temperature_2m * 9/5 + 32) : null;
+  const wind  = wx ? Math.round(wx.wind_speed_10m) : null;
+  const cloud = wx ? wx.cloud_cover : null;
+  const precip = wx ? (wx.precipitation || 0) : 0;
+  const pres  = wx ? wx.pressure_msl : null;
+  const moon  = computeMoon();
 
-  try {
-    if (!CFG.geminiKey) throw new Error('No API key — add your Gemini key in Settings (S)');
+  // Overall bite quality score
+  let score = 5;
+  if (wx) {
+    if (wind < 8) score++; else if (wind > 20) score -= 2;
+    if (pres > 1010 && pres < 1022) score++; else if (pres < 1000) score--;
+    if (cloud > 20 && cloud < 75) score++;
+    if (precip > 0.1) score--;
+    if (moon.frac < 0.08 || moon.frac > 0.92) score++;
+    if (Math.abs(moon.frac - 0.5) < 0.04) score++;
+  }
+  const bite = score >= 7 ? 'great' : score >= 5 ? 'good' : 'fair';
 
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${CFG.geminiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }]
-        })
-      }
-    );
+  // Best time string
+  const srH = 6, ssH = 19;
+  const atGoodTime = hour < srH + 2 || hour > ssH - 1;
+  const timeStr = atGoodTime
+    ? 'Now is prime time (dawn/dusk window)'
+    : `Best: dawn (${srH}–${srH+2}AM) and dusk (${ssH-1}–${ssH+1}PM)`;
 
-    // Handle rate-limit and other HTTP errors explicitly
-    if (resp.status === 429) {
-      throw new Error('Rate limited (429) — please wait a minute and try again');
-    }
-    if (!resp.ok) {
-      throw new Error(`API error ${resp.status}`);
-    }
-
-    const data = await resp.json();
-    let text = '';
-    try { text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''; } catch(e) {}
-    if (!text) throw new Error('Empty AI response');
-
-    let parsed;
-    try {
-      parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-    } catch(e) {
-      console.warn('[species] JSON parse failed, using fallback structure');
-      parsed = {
-        species: (CFG.fishSpecies || '').split(',').map(s => ({
-          name: s.trim(), status: 'good',
-          summary: text.substring(0, 120),
-          tactics: ['live bait', 'structure', 'slow retrieve'],
-          bait: 'live bait', spot: 'near structure', time: 'morning/evening'
-        }))
+  const results = speciesList.map(name => {
+    const db = getSpeciesData(name);
+    if (!db) {
+      return {
+        name, status: 'good',
+        summary: `No specific data for ${name} in this region. Fish near structure with live bait matched to local forage.`,
+        bait: 'Live bait or matching lure', spot: 'Near structure and current edges',
+        tactics: ['Match local forage', 'Work structure edges', 'Adjust depth to conditions'],
+        time: timeStr,
       };
     }
 
-    renderSpecies(parsed.species);
-    _speciesHasContent = true;
-    aiText.textContent = 'UPDATED';
-    errorEl.style.display = 'none';
-    document.getElementById('species-last-update').textContent = 'AI guide updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    locSub.textContent = location + ' · ' + MONTHS[month];
+    const seas   = db.season[month];
+    const status = seas === 3 ? 'peak' : seas === 2 ? 'good' : 'slow';
 
-    // ── SAVE TO DAY-CACHE ────────────────────────────────────────
-    try {
-      const cacheKey = 'speciesCache_' + location.replace(/\W/g,'').slice(0,20) + '_' + speciesList.length;
-      localStorage.setItem(cacheKey, JSON.stringify({
-        date: new Date().toISOString().slice(0,10),
-        savedAt: Date.now(),
-        species: parsed.species
-      }));
-      console.log('[species] Saved to day-cache');
-    } catch(e) { /* storage full or unavailable */ }
-    // ────────────────────────────────────────────────────────────
+    // Pick bait: rotate by month so it doesn't always show the same one
+    const baitIdx = (month + (precip > 0.05 ? 1 : 0)) % db.baits.length;
+    const bait    = db.baits[baitIdx];
+    const spot    = db.spots[month % db.spots.length];
+    const tactics = db.tactics.slice(0, 3);
 
-  } catch(e) {
-    console.warn('[species] Error:', e.message);
-    loadingEl.style.display = 'none';
-    // On 429, set a long backoff so we don't hammer the API
-    if (e.message && e.message.includes('429')) {
-      _speciesNextAllowed = Date.now() + SPECIES_RATELIMIT_COOLDOWN;
-      console.log(`[species] Rate limited — backoff until ${new Date(_speciesNextAllowed).toLocaleTimeString()}`);
+    // Build condition-aware summary
+    let summary;
+    if (tempF && tempF < db.hotTemp[0] - 5) {
+      summary = db.coldNote;
+      summary += bite === 'great' ? ' Stable pressure is helping — worth a try.' : ' Be patient with very slow presentations near structure.';
+    } else if (tempF && tempF > db.hotTemp[1] + 3) {
+      summary = db.hotNote;
+      summary += wind < 10 ? ' Calm conditions today — use lighter tackle.' : ` Wind at ${wind} mph — seek protected water.`;
+    } else {
+      const condNote = precip > 0.05
+        ? 'Rainy — fish less wary, try reaction baits and brighter colors.'
+        : cloud > 75 ? 'Overcast extends the feeding window — fish all day.'
+        : cloud < 25 ? 'Bright sun — target shade, depth, and structure.'
+        : 'Good mixed light — active feeding conditions.';
+      const biteNote = bite === 'great'
+        ? `Excellent conditions — ${name.toLowerCase()} should be on the feed.`
+        : bite === 'good'
+        ? `Solid bite likely. ${wind < 10 ? 'Light winds are ideal.' : `Wind ${wind} mph — find sheltered water.`}`
+        : `Tougher day — slow down, fish structure, and be patient.`;
+      summary = `${condNote} ${biteNote}`;
     }
-    // Show offline fallback so panel isn't empty
-    if (!_speciesHasContent) renderSpeciesFallback();
-    aiText.textContent = 'RETRY';
-    errorEl.style.display = 'block';
-    errorEl.textContent = CFG.geminiKey
-      ? `⚠️ ${e.message} — tap RETRY to try again.`
-      : '⚠️ Add your free Gemini API key in Settings (S) to enable AI species guide.';
-    locSub.textContent = location + ' · ' + MONTHS[month] + ' (offline)';
-  } finally {
-    // Always release the lock and stamp completion time
-    _speciesIsLoading = false;
-    _speciesLastDone  = Date.now();
-    loadingEl.style.display = 'none';
-  }
+    if (Math.abs(moon.frac - 0.5) < 0.04) summary += ' Full moon is boosting activity — night fishing excellent.';
+    if (moon.frac < 0.08) summary += ' New moon — expect a strong dawn bite.';
+    if (pres < 1000) summary += ' Falling pressure — pre-front feeding may be on.';
+
+    return { name, status, summary, bait, spot, tactics, time: timeStr };
+  });
+
+  renderSpecies(results);
+  _speciesHasContent = true;
+
+  const regionLabel = region === 'chesapeake' ? 'Chesapeake / Mid-Atlantic' : 'Florida / Gulf Coast';
+  document.getElementById('species-location-sub').textContent = `${location} · ${MONTHS[month]} · ${regionLabel}`;
+  document.getElementById('species-ai-text').textContent = 'LIVE';
+  document.getElementById('species-last-update').textContent =
+    'Updated ' + now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
+    + (tempF ? ` · ${tempF}°F, wind ${wind} mph` : '');
+  document.getElementById('species-error').style.display = 'none';
+  document.getElementById('species-loading').style.display = 'none';
 }
 
 // ══════════════════════════════════════════
@@ -1012,7 +1124,7 @@ function openSettings() {
   document.getElementById('s-bg').value = CFG.bg === DEFAULT_BG ? '' : CFG.bg;
   document.getElementById('s-timefmt').value = CFG.timeFmt;
   document.getElementById('s-tempunit').value = CFG.tempUnit;
-  document.getElementById('s-gemini-key').value = CFG.geminiKey || '';
+  
   document.querySelectorAll('.color-swatch').forEach(el => el.classList.toggle('active', el.dataset.color === CFG.accentColor));
   document.getElementById('geo-weather-status').textContent = '';
   document.getElementById('geo-fish-status').textContent = '';
@@ -1042,7 +1154,7 @@ function saveSettings() {
   const bgIn   = document.getElementById('s-bg').value.trim();       CFG.bg     = bgIn   || DEFAULT_BG;
   CFG.timeFmt  = document.getElementById('s-timefmt').value;
   CFG.tempUnit = document.getElementById('s-tempunit').value;
-  CFG.geminiKey = document.getElementById('s-gemini-key').value.trim();
+  
   const ac = document.querySelector('.color-swatch.active'); if (ac) CFG.accentColor = ac.dataset.color;
 
   localStorage.setItem('fishDash11', JSON.stringify(CFG));
@@ -1465,12 +1577,12 @@ window.addEventListener('load', () => {
   initCarousel();
   loadWeather(); loadFishingWeather(); loadTides(); loadCalendar(); startFishRefreshCycle();
   // First species load: after 3.5s so weather data is cached first
-  setTimeout(() => speciesAutoLoad(), 3500);
+  setTimeout(() => loadSpeciesLocal(), 1500); // load species after weather data arrives
 });
 setInterval(loadCalendar, 3 * 60 * 1000);
 setInterval(() => { loadWeather(); loadTides(); }, 10 * 60 * 1000);
 // Periodic species refresh: every 30min, use auto-load (respects cooldown/lock)
-setInterval(() => { _speciesHasContent = false; speciesAutoLoad(); }, 30 * 60 * 1000);
+setInterval(() => { _speciesHasContent = false; loadSpeciesLocal(); }, 60 * 60 * 1000); // refresh hourly
 </script>
 </body>
 </html>
