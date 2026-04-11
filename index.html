@@ -607,19 +607,52 @@ function speciesManualRefresh() {
     }, waitUntil - now);
     return;
   }
+  // Clear backoff so a manual retry always gets a real attempt
+  _speciesNextAllowed = 0;
   // Claim the lock SYNCHRONOUSLY before any async work
   _speciesIsLoading = true;
   _loadSpeciesGuide();
 }
 
 /** Called automatically (panel navigation, settings save, periodic refresh).
- *  Skips silently if content already exists and cooldown has not elapsed. */
+ *  Skips silently if content already exists and cooldown has not elapsed.
+ *  Always checks the day-cache first so a rate-limited session never
+ *  blocks a fresh page load from showing cached content. */
 function speciesAutoLoad() {
   const now = Date.now();
   if (_speciesIsLoading) {
     console.log('[species] Auto-load skipped — already loading');
     return;
   }
+
+  // Always try the day-cache first — even during backoff.
+  // If we have today's data cached, render it immediately without touching the API.
+  try {
+    const speciesList = CFG.fishSpecies || 'Snook, tarpon, redfish, flounder';
+    const location    = CFG.fishName;
+    const cacheKey    = 'speciesCache_' + location.replace(/\W/g,'').slice(0,20) + '_' + speciesList.length;
+    const todayStr    = new Date().toISOString().slice(0, 10);
+    const raw         = localStorage.getItem(cacheKey);
+    if (raw) {
+      const cached = JSON.parse(raw);
+      if (cached.date === todayStr && Array.isArray(cached.species) && cached.species.length) {
+        if (!_speciesHasContent) {
+          console.log('[species] Auto-load: serving from day-cache (no API call)');
+          renderSpecies(cached.species);
+          _speciesHasContent = true;
+          const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+          document.getElementById('species-ai-text').textContent = 'TODAY';
+          document.getElementById('species-error').style.display = 'none';
+          document.getElementById('species-location-sub').textContent = location + ' · ' + MONTHS[new Date().getMonth()];
+          document.getElementById('species-last-update').textContent =
+            'Cached today at ' + new Date(cached.savedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+          document.getElementById('species-loading').style.display = 'none';
+        }
+        return; // Either way, don't hit the API
+      }
+    }
+  } catch(e) { /* cache read failed, fall through to API */ }
+
   const waitUntil = Math.max(_speciesLastDone + SPECIES_COOLDOWN_MS, _speciesNextAllowed);
   if (_speciesHasContent && now < waitUntil) {
     console.log('[species] Auto-load skipped — content fresh or in backoff');
@@ -710,7 +743,7 @@ Return ONLY valid JSON (no markdown, no explanation):
     if (!CFG.geminiKey) throw new Error('No API key — add your Gemini key in Settings (S)');
 
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${CFG.geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${CFG.geminiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
