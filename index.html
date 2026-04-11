@@ -47,8 +47,22 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
 
 #carousel-viewport { flex:1; overflow:hidden; position:relative; }
 #carousel-track { display:flex; flex-direction:column; transition:transform 0.7s cubic-bezier(0.4,0,0.2,1); will-change:transform; }
-.carousel-panel { flex-shrink:0; padding:0 12px 14px 16px; display:flex; flex-direction:column; gap:10px; overflow:hidden; }
-
+.carousel-panel {
+  flex-shrink:0;
+  padding:0 12px 14px 16px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  min-height:0;
+}
+  #panel-species .wcard {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
+}
 .wcard { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.14); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-radius:var(--radius); padding:14px 15px; flex-shrink:0; box-shadow:var(--shadow-card); }
 .wlabel { font-size:9px; font-weight:600; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:10px; text-shadow:0 1px 8px rgba(0,0,0,0.9); }
 
