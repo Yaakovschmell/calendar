@@ -276,6 +276,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:0.7} }
 ::-webkit-scrollbar { width:4px; }
 ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:4px; }
+.water-btn { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.18); border-radius:8px; padding:8px 14px; color:rgba(255,255,255,0.7); font-family:var(--font-sans); font-size:12px; cursor:pointer; transition:all 0.2s; font-weight:400; }
+.water-btn:hover { background:rgba(255,255,255,0.14); color:#fff; }
+.water-btn.active { background:rgba(232,201,122,0.22); border-color:var(--accent); color:var(--accent); font-weight:500; }
 </style>
 </head>
 <body>
@@ -436,27 +439,36 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
         <div class="s-field full">
           <label>Fishing Spot (type to search)</label>
           <div class="autocomplete-wrap">
-            <input id="s-fish-name" placeholder="Juno Beach, FL" autocomplete="off" oninput="acDebounce('s-fish-name','ac-fish','fish')">
+            <input id="s-fish-name" placeholder="Dundee Creek, MD" autocomplete="off" oninput="acDebounce('s-fish-name','ac-fish','fish')">
             <div class="autocomplete-list" id="ac-fish"></div>
           </div>
           <div class="geo-status" id="geo-fish-status"></div>
-          <div class="s-note">Selecting a location auto-fills coordinates, nearest tide station, nearby spots, and recommended species.</div>
+          <div class="s-note">Pick a location and everything updates automatically — tides, species, seasonal data, and fishing advice.</div>
+        </div>
+        <div class="s-field full">
+          <label>Water Type</label>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button type="button" class="water-btn active" id="wt-auto" onclick="setWaterType('auto')">🔍 Auto-detect</button>
+            <button type="button" class="water-btn" id="wt-salt" onclick="setWaterType('salt')">🌊 Saltwater</button>
+            <button type="button" class="water-btn" id="wt-fresh" onclick="setWaterType('fresh')">🏞️ Freshwater</button>
+          </div>
+          <div class="s-note" id="water-type-note">Auto-detect picks saltwater or freshwater based on your spot name and coordinates.</div>
         </div>
         <div class="s-field full">
           <label>Nearby Spots (auto-generated when you pick a location)</label>
           <div class="s-presets" id="s-fish-presets"><span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">Select a fishing location above to see nearby spots</span></div>
         </div>
-        <div class="s-field"><label>Latitude</label><input id="s-fish-lat" placeholder="26.8701"></div>
-        <div class="s-field"><label>Longitude</label><input id="s-fish-lon" placeholder="-80.0534"></div>
+        <div class="s-field"><label>Latitude</label><input id="s-fish-lat" placeholder="39.3254"></div>
+        <div class="s-field"><label>Longitude</label><input id="s-fish-lon" placeholder="-76.4197"></div>
         <div class="s-field full">
-          <label>NOAA Tide Station ID (auto-filled)</label>
-          <input id="s-tide-station" placeholder="8722669">
-          <div class="s-note">Auto-filled when you pick a location. Find manually at <strong>tidesandcurrents.noaa.gov/stations.html</strong></div>
+          <label>NOAA Tide Station ID (auto-filled for saltwater)</label>
+          <input id="s-tide-station" placeholder="8574680">
+          <div class="s-note">Auto-filled when you pick a saltwater location. Find manually at <strong>tidesandcurrents.noaa.gov/stations.html</strong></div>
         </div>
         <div class="s-field full">
-          <label>Target Species (auto-suggested, or edit manually)</label>
-          <input id="s-fish-species" placeholder="Snook, tarpon, redfish, flounder">
-          <div class="s-note">Auto-filled when you pick a location above. Edit to customize — or just pick a new location and it updates automatically.</div>
+          <label>Target Species (auto-suggested — or edit manually)</label>
+          <input id="s-fish-species" placeholder="Striped bass, white perch, catfish, bluefish">
+          <div class="s-note">Auto-filled from your location and water type. Edit to customize anything.</div>
         </div>
       </div>
     </div>
@@ -522,39 +534,95 @@ const CORS_PROXIES = [
   u => `https://thingproxy.freeboard.io/fetch/${u}`,
 ];
 
-// Auto-suggest species list from coordinates
-// Returns { species: "comma list", region: "key" }
-function guessSpeciesForLocation(lat, lon, name) {
+// Detect water type from name + waterType setting
+// Returns 'fresh', 'salt', or 'tidal'
+function detectWaterType(lat, lon, name) {
+  const override = CFG.waterType || 'auto';
+  if (override === 'salt')  return 'salt';
+  if (override === 'fresh') return 'fresh';
+  // Auto-detect from name
   const n = (name||'').toLowerCase();
+  const freshWords = ['lake','reservoir','pond','loch','quarry','freshwater','river park','creek park','state park'];
+  const saltWords  = ['bay','ocean','sound','inlet','harbor','harbor','gulf','sea','channel','chesapeake','river mouth','tidal','marsh'];
+  // Tidal rivers are salt/brackish (Patuxent, Patapsco, etc. in MD)
+  const tidalRivers = ['patuxent','patapsco','gunpowder','bush','magothy','severn','south river','west river','choptank','nanticoke','wicomico','pocomoke'];
+  if (freshWords.some(w => n.includes(w))) return 'fresh';
+  if (saltWords.some(w => n.includes(w)))  return 'salt';
+  if (tidalRivers.some(w => n.includes(w))) return 'tidal'; // tidal = brackish, use salt species
+  // Coordinate-based: if it's a coastal location use salt
+  return 'salt'; // default to salt for fishing spots
+}
+
+// Auto-suggest species + region from coordinates and water type
+function guessSpeciesForLocation(lat, lon, name) {
+  const n    = (name||'').toLowerCase();
+  const wt   = detectWaterType(lat, lon, name);
+
+  // ── FRESHWATER ──────────────────────────────────────────────────
+  if (wt === 'fresh') {
+    // Southern freshwater (FL, GA, SC, TX lakes)
+    if (lat < 35)
+      return { species:'Largemouth bass, crappie, bluegill, catfish, sunshine bass', region:'chesapeake', water:'fresh' };
+    // Mid-Atlantic / Northeast reservoirs
+    return { species:'Largemouth bass, smallmouth bass, crappie, catfish, bluegill', region:'chesapeake', water:'fresh' };
+  }
+
+  // ── SALTWATER / TIDAL ────────────────────────────────────────────
   // Florida Keys
   if ((lat < 25.5 && lon > -81.5 && lon < -79.5) || n.includes('key west') || n.includes('florida key'))
-    return { species:'Tarpon, bonefish, permit, snook, barracuda', region:'florida' };
-  // South Florida / SE Atlantic coast
+    return { species:'Tarpon, bonefish, permit, snook, barracuda', region:'florida', water:'salt' };
+  // South Florida SE coast
   if (lat >= 24 && lat < 27.5 && lon > -81 && lon < -79.5)
-    return { species:'Snook, tarpon, redfish, flounder, cobia', region:'florida' };
+    return { species:'Snook, tarpon, redfish, flounder, cobia', region:'florida', water:'salt' };
   // Gulf Coast FL
   if (lat >= 24 && lat < 30 && lon >= -88 && lon < -81)
-    return { species:'Redfish, snook, speckled trout, flounder, cobia', region:'florida' };
+    return { species:'Redfish, snook, speckled trout, flounder, cobia', region:'florida', water:'salt' };
+  // Gulf Coast TX/LA/MS
+  if (lon <= -88 && lat >= 25 && lat <= 33)
+    return { species:'Redfish, speckled trout, flounder, cobia, sheepshead', region:'florida', water:'salt' };
   // Chesapeake Bay / Maryland / Virginia tidal
   if (lat >= 36.5 && lat <= 39.8 && lon >= -77.5 && lon <= -75.5)
-    return { species:'Striped bass, white perch, catfish, bluefish, flounder', region:'chesapeake' };
-  // Delaware Bay / South Jersey
+    return { species:'Striped bass, white perch, catfish, bluefish, flounder', region:'chesapeake', water:'salt' };
+  // Delaware Bay / South NJ
   if (lat >= 38.5 && lat <= 40.5 && lon >= -75.5 && lon <= -73.5)
-    return { species:'Striped bass, bluefish, weakfish, flounder', region:'chesapeake' };
-  // Northeast (NY, CT, MA, RI)
+    return { species:'Striped bass, bluefish, weakfish, flounder, sea bass', region:'chesapeake', water:'salt' };
+  // Northeast coast NY/CT/MA/RI
   if (lat >= 40 && lat <= 43 && lon >= -74.5 && lon <= -69)
-    return { species:'Striped bass, bluefish, flounder, blackfish', region:'chesapeake' };
-  // Gulf Coast (TX, LA, MS, AL)
-  if (lon <= -88 && lat >= 25 && lat <= 33)
-    return { species:'Redfish, speckled trout, flounder, cobia, sheepshead', region:'florida' };
-  // Freshwater signals in name
-  if (n.includes('lake') || n.includes('reservoir') || n.includes('pond'))
-    return { species:'Largemouth bass, crappie, catfish, bluegill', region:'chesapeake' };
-  // Generic south
+    return { species:'Striped bass, bluefish, flounder, blackfish, sea bass', region:'chesapeake', water:'salt' };
+  // Generic south salt
   if (lat < 32)
-    return { species:'Redfish, flounder, speckled trout, sheepshead', region:'florida' };
-  // Generic north
-  return { species:'Striped bass, bluefish, flounder, weakfish', region:'chesapeake' };
+    return { species:'Redfish, flounder, speckled trout, sheepshead', region:'florida', water:'salt' };
+  // Generic north salt
+  return { species:'Striped bass, bluefish, flounder, weakfish', region:'chesapeake', water:'salt' };
+}
+
+// Toggle handler called by water type buttons in settings
+let _pendingWaterType = 'auto';
+function setWaterType(type) {
+  _pendingWaterType = type;
+  ['auto','salt','fresh'].forEach(t => {
+    const btn = document.getElementById('wt-' + t);
+    if (btn) btn.classList.toggle('active', t === type);
+  });
+  const notes = {
+    auto:  'Auto-detect picks saltwater or freshwater based on your spot name and coordinates.',
+    salt:  'Saltwater: tidal, bay, ocean, and coastal species will be shown.',
+    fresh: 'Freshwater: lake, reservoir, river, and pond species will be shown.',
+  };
+  const noteEl = document.getElementById('water-type-note');
+  if (noteEl) noteEl.textContent = notes[type];
+  // Re-run species suggestion with new water type if coords are available
+  const lat = parseFloat(document.getElementById('s-fish-lat')?.value);
+  const lon = parseFloat(document.getElementById('s-fish-lon')?.value);
+  const name = document.getElementById('s-fish-name')?.value || '';
+  if (!isNaN(lat) && !isNaN(lon)) {
+    // Temporarily apply type so guessSpeciesForLocation uses it
+    const prev = CFG.waterType;
+    CFG.waterType = type;
+    const guess = guessSpeciesForLocation(lat, lon, name);
+    document.getElementById('s-fish-species').value = guess.species;
+    CFG.waterType = prev; // restore until saved
+  }
 }
 
 const DEFAULTS = {
@@ -562,6 +630,7 @@ const DEFAULTS = {
   fishName:'Dundee Creek, Maryland', fishLat:39.3254, fishLon:-76.4197,
   fishSpecies:'Striped bass, white perch, catfish, bluefish',
   tideStation:'8574680',
+  waterType:'auto',
   icalUrl:DEFAULT_ICAL, bg:DEFAULT_BG,
   accentColor:'#e8c97a', timeFmt:'12', tempUnit:'F',
   
@@ -821,6 +890,113 @@ const SPECIES_PROFILES = {
     florida: { season:[1,1,1,1,1,1,1,1,1,1,1,1], baits:['N/A'], spots:['Not common in Florida'], tactics:['Not a target Florida species'], hotTemp:[50,72], coldNote:'Not present.', hotNote:'Not present.' },
   },
 
+  // ── FRESHWATER SPECIES ──────────────────────────────────────────────────────
+  'largemouth bass': {
+    chesapeake: {
+      season:  [2,3,3,3,2,2,1,1,2,3,3,2],
+      baits:   ['Plastic worm (10")','Spinnerbait','Topwater frog','Football jig','Swimbait','Crankbait'],
+      spots:   ['Loch Raven Reservoir','Liberty Reservoir','Triadelphia Reservoir','Mattawoman Creek','Potomac River flats','Dock pilings on tidal creeks'],
+      tactics: ['Flip and pitch to heavy cover','Work topwater frog over lily pads','Slow roll spinnerbait along weedline','Drop shot near points and ledges','Texas-rig worm through brush'],
+      hotTemp: [62, 80],
+      coldNote: 'Suspend jerkbait near structure. Fish painfully slow — one twitch, long pause.',
+      hotNote:  'Dawn topwater only. Move to 18–25ft structure by mid-morning.',
+    },
+    florida: {
+      season:  [2,3,3,3,3,2,1,1,2,3,3,2],
+      baits:   ['Plastic worm (12")','Frog','Shiner (live)','Punch rig','Crankbait'],
+      spots:   ['Hydrilla and grass mats','Cypress trees','Lily pads','Canal edges','Lake Okeechobee flats'],
+      tactics: ['Punch heavy jig through grass mats','Freeline wild shiner near reeds','Frog over pads','Flip dock posts at dawn'],
+      hotTemp: [65, 84],
+      coldNote: 'Slow down — bass sluggish in Florida "cold" (below 60°F). Jerkbait near structure.',
+      hotNote:  'First 2 hours of daylight. Seek shade and deeper grass.',
+    },
+  },
+
+  'smallmouth bass': {
+    chesapeake: {
+      season:  [1,2,3,3,2,2,1,1,2,3,3,2],
+      baits:   ['Crayfish imitation','Ned rig','Tube jig','Drop shot with finesse worm','Inline spinner'],
+      spots:   ['Potomac River rocky shoals','Susquehanna River','Rocky creek runs','Below riffles','Bridge abutments'],
+      tactics: ['Drift crayfish in current','Work Ned rig slowly on rocky bottom','Drop shot in 8–15ft near structure','Swim tube jig through current seams'],
+      hotTemp: [55, 72],
+      coldNote: 'Smallmouth sluggish below 45°F. Deep pools with slow finesse presentations.',
+      hotNote:  'Dawn and dusk near current. Mid-day seek deep shade.',
+    },
+    florida: {
+      season:  [1,1,2,2,1,1,1,1,1,2,2,1],
+      baits:   ['Finesse worm','Drop shot','Tube jig'],
+      spots:   ['Clear spring-fed rivers','Hillsborough River','Suwannee River upper stretches'],
+      tactics: ['Finesse presentations only','Drop shot near rocks'],
+      hotTemp: [58, 74],
+      coldNote: 'Rare in Florida — stick to largemouth.',
+      hotNote:  'Very rare in FL — seek spring-fed clear rivers only.',
+    },
+  },
+
+  'crappie': {
+    chesapeake: {
+      season:  [2,3,3,3,2,1,1,1,2,2,3,2],
+      baits:   ['Small tube jig (1/16oz)','Minnow under bobber','Small curly-tail jig','Crappie Nibbles','Tiny spinnerbait'],
+      spots:   ['Brush piles in 8–15ft','Boat dock pilings','Flooded timber','Loch Raven coves','Bridge supports in reservoirs'],
+      tactics: ['Slow vertical jigging in brush piles','Drift small jigs under bobber','Spider rig with multiple lines','Target spawning shallows March–April'],
+      hotTemp: [55, 72],
+      coldNote: 'Crappie move to 20–30ft brush piles in winter. Vertical jig slow.',
+      hotNote:  'Fish early morning near shaded structure. 12–18ft depth.',
+    },
+    florida: {
+      season:  [2,3,3,2,2,1,1,1,2,2,3,2],
+      baits:   ['Small tube jig','Minnow','Beetle Spin','Tiny swimbaits'],
+      spots:   ['Hydrilla edges','Flooded timber','Dock pilings','Canals'],
+      tactics: ['Slow jig in brush piles','Minnow under float','Dock shooting technique'],
+      hotTemp: [58, 76],
+      coldNote: 'Crappie active in Florida winters — seek 12–20ft brush.',
+      hotNote:  'Deep structure midday. Dawn near shallower brush.',
+    },
+  },
+
+  'catfish': {
+    chesapeake: {
+      season:  [2,2,3,3,2,2,2,2,3,3,2,2],
+      baits:   ['Chicken liver','Cut shad','Bloodworms','Nightcrawlers','Prepared stinkbait','Cut menhaden'],
+      spots:   ['Patapsco River deep holes','Gunpowder River bends','Loch Raven Reservoir','Under bridges at night','Deep channel edges','Bottom of boat ramps'],
+      tactics: ['Fish chicken liver on bottom at night','Drift cut shad through channels','Set multiple rods on bottom','Target deep holes after heavy rain'],
+      hotTemp: [55, 82],
+      coldNote: 'Channel cats slow in winter — fish deep holes with cut bait. Still catchable.',
+      hotNote:  'Night fishing is prime in summer. Strong-smelling baits work best.',
+    },
+    florida: {
+      season:  [2,2,2,3,3,3,2,2,2,2,2,2],
+      baits:   ['Cut mullet','Chicken liver','Nightcrawlers','Shrimp'],
+      spots:   ['Freshwater canals','Lake Okeechobee','River bends','Deep holes near bridges'],
+      tactics: ['Bottom rig with cut bait','Fish at night near lights','Drift in current near structure'],
+      hotTemp: [60, 85],
+      coldNote: 'Still active in mild Florida winters.',
+      hotNote:  'Night fishing near lights is very productive.',
+    },
+  },
+
+  'bluegill': {
+    chesapeake: {
+      season:  [1,2,3,3,3,2,2,2,2,2,2,1],
+      baits:   ['Red worm under bobber','Crickets','Wax worms','Tiny jigs','Corn'],
+      spots:   ['Shallow coves with gravel','Brush piles in 5–10ft','Dock edges','Weed edges in reservoirs','Small ponds'],
+      tactics: ['Light float rig with worm','Tiny jig worked slowly','Cast near brush and let sink','Fish spawning beds in May–June'],
+      hotTemp: [62, 80],
+      coldNote: 'Bluegill move to deeper 10–15ft water. Fish slow with tiny jig.',
+      hotNote:  'Early morning near lily pads. Small presentations only.',
+    },
+    florida: {
+      season:  [2,3,3,3,2,2,1,1,2,2,3,2],
+      baits:   ['Red worm','Crickets','Tiny jigs','Corn'],
+      spots:   ['Shallow weedy coves','Dock pilings','Spawning beds March–May','Ponds and lakes'],
+      tactics: ['Float rig with worm near structure','Cast to spawning beds in spring'],
+      hotTemp: [65, 84],
+      coldNote: 'Still active in Florida winters near structure.',
+      hotNote:  'Dawn near weeds. Very small baits and light line.',
+    },
+  },
+
+
 };
 
 // Detect region from fishing location — shares logic with guessSpeciesForLocation
@@ -834,10 +1010,10 @@ function getSpeciesData(name) {
   const n = name.toLowerCase().trim();
   const region = detectRegion();
   // Exact match
-  if (SPECIES_PROFILES[n]) return SPECIES_PROFILES[n][region];
+  if (SPECIES_PROFILES[n]) return SPECIES_PROFILES[n][region] || SPECIES_PROFILES[n]['chesapeake'];
   // Partial match
   for (const key of Object.keys(SPECIES_PROFILES)) {
-    if (n.includes(key) || key.includes(n)) return SPECIES_PROFILES[key][region];
+    if (n.includes(key) || key.includes(n)) return SPECIES_PROFILES[key][region] || SPECIES_PROFILES[key]['chesapeake'];
   }
   return null;
 }
@@ -1145,6 +1321,9 @@ function openSettings() {
   document.getElementById('geo-weather-status').textContent = '';
   document.getElementById('geo-fish-status').textContent = '';
   document.getElementById('s-fish-presets').innerHTML = '<span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">Pick a location above to see nearby spots</span>';
+  // Restore water type toggle
+  _pendingWaterType = CFG.waterType || 'auto';
+  setWaterType(_pendingWaterType);
   document.getElementById('settings-panel').style.display = 'block';
 }
 
@@ -1168,6 +1347,9 @@ function saveSettings() {
   if (ts) CFG.tideStation = ts;
 
   // If species field is empty or still the old default, auto-detect from new location
+  // Save water type from the toggle buttons
+  CFG.waterType = _pendingWaterType || CFG.waterType || 'auto';
+
   const speciesInput = document.getElementById('s-fish-species').value.trim();
   if (speciesInput) {
     CFG.fishSpecies = speciesInput;
