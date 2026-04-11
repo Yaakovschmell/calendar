@@ -564,7 +564,7 @@ function guessSpeciesForLocation(lat, lon, name) {
     if (lat < 35)
       return { species:'Largemouth bass, crappie, bluegill, catfish, sunshine bass', region:'chesapeake', water:'fresh' };
     // Mid-Atlantic / Northeast reservoirs
-    return { species:'Largemouth bass, smallmouth bass, crappie, catfish, bluegill', region:'chesapeake', water:'fresh' };
+    return { species:'Northern snakehead, largemouth bass, smallmouth bass, crappie, catfish, bluegill', region:'chesapeake', water:'fresh' };
   }
 
   // ── SALTWATER / TIDAL ────────────────────────────────────────────
@@ -582,7 +582,7 @@ function guessSpeciesForLocation(lat, lon, name) {
     return { species:'Redfish, speckled trout, flounder, cobia, sheepshead', region:'florida', water:'salt' };
   // Chesapeake Bay / Maryland / Virginia tidal
   if (lat >= 36.5 && lat <= 39.8 && lon >= -77.5 && lon <= -75.5)
-    return { species:'Striped bass, white perch, catfish, bluefish, flounder', region:'chesapeake', water:'salt' };
+    return { species:'Striped bass, northern snakehead, white perch, catfish, bluefish, flounder', region:'chesapeake', water:'salt' };
   // Delaware Bay / South NJ
   if (lat >= 38.5 && lat <= 40.5 && lon >= -75.5 && lon <= -73.5)
     return { species:'Striped bass, bluefish, weakfish, flounder, sea bass', region:'chesapeake', water:'salt' };
@@ -628,7 +628,7 @@ function setWaterType(type) {
 const DEFAULTS = {
   city:'Baltimore, Maryland', lat:39.2904, lon:-76.6122,
   fishName:'Dundee Creek, Maryland', fishLat:39.3254, fishLon:-76.4197,
-  fishSpecies:'Striped bass, white perch, catfish, bluefish',
+  fishSpecies:'Striped bass, northern snakehead, white perch, catfish, bluefish',
   tideStation:'8574680',
   waterType:'auto',
   icalUrl:DEFAULT_ICAL, bg:DEFAULT_BG,
@@ -888,6 +888,28 @@ const SPECIES_PROFILES = {
       hotNote:  'Move to shaded deeper water. Early morning bite is best.',
     },
     florida: { season:[1,1,1,1,1,1,1,1,1,1,1,1], baits:['N/A'], spots:['Not common in Florida'], tactics:['Not a target Florida species'], hotTemp:[50,72], coldNote:'Not present.', hotNote:'Not present.' },
+  },
+
+
+  'northern snakehead': {
+    chesapeake: {
+      season:  [1,1,2,3,3,3,3,3,2,2,1,1],
+      baits:   ['Hollow body frog','Live bluegill (where legal)','Chatter bait','Swimbait','Topwater walking bait','Soft plastic paddle tail','Weedless buzz bait'],
+      spots:   ['Mattawoman Creek (Charles Co.)','Patuxent River grass flats','Potomac River lily pad fields','Marshes and wetland edges','Shallow mats of hydrilla and milfoil','Stump fields in 2–4ft','Back coves with dense vegetation'],
+      tactics: ['Walk hollow frog over lily pads — pause in openings','Punch weighted jig through hydrilla mats','Slow roll chatter bait along weedline edge','Work swimbait through channels between grass beds','Burn buzz bait over mats at dawn — snakehead explode on it','Target cruising fish in clear shallows with sight casting'],
+      hotTemp: [65, 86],
+      coldNote: 'Snakehead become very sluggish below 50°F and stop feeding actively. They can breathe air so they survive winter but go dormant near bottom of deep holes.',
+      hotNote:  'Summer is prime — peak topwater action at dawn. Fish mats and pads hard in the first 2 hours of daylight.',
+    },
+    florida: {
+      season:  [1,1,2,3,3,3,3,3,2,2,1,1],
+      baits:   ['Hollow frog','Swimbait','Topwater plug'],
+      spots:   ['South Florida canals','Broward County drainage canals','Everglades fringe areas'],
+      tactics: ['Frog over vegetation','Swimbait through canals','Topwater at dawn'],
+      hotTemp: [68, 88],
+      coldNote: 'Rare in Florida — mostly a Mid-Atlantic invasive species.',
+      hotNote:  'Early morning topwater in South FL canals.',
+    },
   },
 
   // ── FRESHWATER SPECIES ──────────────────────────────────────────────────────
