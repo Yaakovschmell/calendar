@@ -456,7 +456,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
         <div class="s-field full">
           <label>Target Species (auto-suggested, or edit manually)</label>
           <input id="s-fish-species" placeholder="Snook, tarpon, redfish, flounder">
-          <div class="s-note">Auto-suggested based on location. Edit to customize what appears in your fishing report and AI species guide.</div>
+          <div class="s-note">Auto-filled when you pick a location above. Edit to customize — or just pick a new location and it updates automatically.</div>
         </div>
       </div>
     </div>
@@ -522,26 +522,39 @@ const CORS_PROXIES = [
   u => `https://thingproxy.freeboard.io/fetch/${u}`,
 ];
 
-const SPECIES_DB = {
-  florida_south: { species:'Snook, tarpon, redfish, flounder, cobia', methods:'Live pilchards, DOA shrimp, gold spoons, soft plastics' },
-  florida_keys:  { species:'Tarpon, bonefish, permit, snook, barracuda', methods:'Crabs, shrimp flies, live bait, streamers' },
-  chesapeake:    { species:'Striped bass, white perch, catfish, bluefish', methods:'Bucktails, bloodworms, live spot, soft plastics' },
-  gulf:          { species:'Redfish, speckled trout, flounder, cobia', methods:'Gold spoons, DOA shrimp, popping corks, live bait' },
-  northeast:     { species:'Striped bass, bluefish, flounder, weakfish', methods:'Bunker chunks, soft plastics, topwater plugs' },
-  freshwater:    { species:'Largemouth bass, crappie, catfish, bluegill', methods:'Soft plastics, jigs, live worms, crankbaits' },
-  default:       { species:'Bass, perch, catfish, panfish', methods:'Live bait, soft plastics, spinners, crankbaits' },
-};
-
-function guessSpecies(lat, lon, name) {
-  const nameLower = (name||'').toLowerCase();
-  if (nameLower.includes('key') || (lat < 25.5 && lon > -81.5 && lon < -80)) return SPECIES_DB.florida_keys;
-  if (lat < 27.5 && lat > 24 && lon > -82 && lon < -79) return SPECIES_DB.florida_south;
-  if (nameLower.includes('gulf') || (lon < -88 && lat < 31)) return SPECIES_DB.gulf;
-  if (lat > 36 && lat < 42 && lon > -77 && lon < -70) return SPECIES_DB.northeast;
-  if (lat > 37 && lat < 40 && lon > -77.5 && lon < -75) return SPECIES_DB.chesapeake;
-  if (nameLower.includes('lake') || nameLower.includes('river') || nameLower.includes('creek')) return SPECIES_DB.freshwater;
-  if (lat < 31 && lon > -82) return SPECIES_DB.florida_south;
-  return SPECIES_DB.default;
+// Auto-suggest species list from coordinates
+// Returns { species: "comma list", region: "key" }
+function guessSpeciesForLocation(lat, lon, name) {
+  const n = (name||'').toLowerCase();
+  // Florida Keys
+  if ((lat < 25.5 && lon > -81.5 && lon < -79.5) || n.includes('key west') || n.includes('florida key'))
+    return { species:'Tarpon, bonefish, permit, snook, barracuda', region:'florida' };
+  // South Florida / SE Atlantic coast
+  if (lat >= 24 && lat < 27.5 && lon > -81 && lon < -79.5)
+    return { species:'Snook, tarpon, redfish, flounder, cobia', region:'florida' };
+  // Gulf Coast FL
+  if (lat >= 24 && lat < 30 && lon >= -88 && lon < -81)
+    return { species:'Redfish, snook, speckled trout, flounder, cobia', region:'florida' };
+  // Chesapeake Bay / Maryland / Virginia tidal
+  if (lat >= 36.5 && lat <= 39.8 && lon >= -77.5 && lon <= -75.5)
+    return { species:'Striped bass, white perch, catfish, bluefish, flounder', region:'chesapeake' };
+  // Delaware Bay / South Jersey
+  if (lat >= 38.5 && lat <= 40.5 && lon >= -75.5 && lon <= -73.5)
+    return { species:'Striped bass, bluefish, weakfish, flounder', region:'chesapeake' };
+  // Northeast (NY, CT, MA, RI)
+  if (lat >= 40 && lat <= 43 && lon >= -74.5 && lon <= -69)
+    return { species:'Striped bass, bluefish, flounder, blackfish', region:'chesapeake' };
+  // Gulf Coast (TX, LA, MS, AL)
+  if (lon <= -88 && lat >= 25 && lat <= 33)
+    return { species:'Redfish, speckled trout, flounder, cobia, sheepshead', region:'florida' };
+  // Freshwater signals in name
+  if (n.includes('lake') || n.includes('reservoir') || n.includes('pond'))
+    return { species:'Largemouth bass, crappie, catfish, bluegill', region:'chesapeake' };
+  // Generic south
+  if (lat < 32)
+    return { species:'Redfish, flounder, speckled trout, sheepshead', region:'florida' };
+  // Generic north
+  return { species:'Striped bass, bluefish, flounder, weakfish', region:'chesapeake' };
 }
 
 const DEFAULTS = {
@@ -810,18 +823,11 @@ const SPECIES_PROFILES = {
 
 };
 
-// Detect region from fishing location coordinates
+// Detect region from fishing location — shares logic with guessSpeciesForLocation
 function detectRegion() {
   const lat = CFG.fishLat || CFG.lat || 39;
   const lon = CFG.fishLon || CFG.lon || -76;
-  // Mid-Atlantic / Chesapeake: roughly lat 36-42, lon -77 to -74
-  if (lat >= 36 && lat <= 42 && lon >= -78 && lon <= -73) return 'chesapeake';
-  // Florida
-  if (lat >= 24 && lat <= 31 && lon >= -88 && lon <= -79) return 'florida';
-  // Gulf Coast
-  if (lat >= 25 && lat <= 33 && lon >= -98 && lon <= -85) return 'florida'; // use florida profile
-  // Default: if north of 35, chesapeake; south, florida
-  return lat >= 35 ? 'chesapeake' : 'florida';
+  return guessSpeciesForLocation(lat, lon, CFG.fishName || '').region;
 }
 
 function getSpeciesData(name) {
@@ -1053,18 +1059,28 @@ async function pickAC(type, label, lat, lon, inputId, listId) {
     document.getElementById('s-fish-lat').value = lat.toFixed(4);
     document.getElementById('s-fish-lon').value = lon.toFixed(4);
     const st = document.getElementById('geo-fish-status');
-    st.textContent = '📍 Finding tide station & generating nearby spots…';
+    st.textContent = '📍 Detecting region, species & tide station…';
     st.style.color = 'var(--warn)';
-    const speciesInfo = guessSpecies(lat, lon, label);
-    document.getElementById('s-fish-species').value = speciesInfo.species;
-    generateNearbySpots(lat, lon, label);
-    const station = await findNearestTideStation(lat, lon);
+
+    // Auto-detect species from coordinates
+    const guess = guessSpeciesForLocation(lat, lon, label);
+    document.getElementById('s-fish-species').value = guess.species;
+
+    // Show region badge in status
+    const regionLabel = guess.region === 'chesapeake' ? 'Chesapeake/Mid-Atlantic' : 'Florida/Gulf Coast';
+
+    // Run tide station lookup and nearby spots in parallel
+    const [station] = await Promise.all([
+      findNearestTideStation(lat, lon),
+      generateNearbySpots(lat, lon, label),
+    ]);
+
     if (station) {
       document.getElementById('s-tide-station').value = station.id;
-      st.textContent = `✅ Tide station: ${station.name} (${station.id}) · Species auto-suggested`;
+      st.textContent = `✅ ${regionLabel} · ${station.name} tide station · Species updated`;
       st.style.color = 'var(--good)';
     } else {
-      st.textContent = '✅ Coordinates set · Species auto-suggested · Enter tide station manually';
+      st.textContent = `✅ ${regionLabel} · Species updated · Enter tide station manually`;
       st.style.color = 'var(--warn)';
     }
   }
@@ -1141,6 +1157,7 @@ function saveSettings() {
   CFG.city = document.getElementById('s-city').value.trim() || DEFAULTS.city;
   CFG.lat  = parseFloat(document.getElementById('s-lat').value) || DEFAULTS.lat;
   CFG.lon  = parseFloat(document.getElementById('s-lon').value) || DEFAULTS.lon;
+
   const fn = document.getElementById('s-fish-name').value.trim();
   const fl = parseFloat(document.getElementById('s-fish-lat').value);
   const fo = parseFloat(document.getElementById('s-fish-lon').value);
@@ -1149,33 +1166,37 @@ function saveSettings() {
   if (!isNaN(fl)) CFG.fishLat = fl;
   if (!isNaN(fo)) CFG.fishLon = fo;
   if (ts) CFG.tideStation = ts;
-  CFG.fishSpecies = document.getElementById('s-fish-species').value.trim() || DEFAULTS.fishSpecies;
+
+  // If species field is empty or still the old default, auto-detect from new location
+  const speciesInput = document.getElementById('s-fish-species').value.trim();
+  if (speciesInput) {
+    CFG.fishSpecies = speciesInput;
+  } else if (!isNaN(fl) && !isNaN(fo)) {
+    CFG.fishSpecies = guessSpeciesForLocation(fl, fo, fn).species;
+  } else {
+    CFG.fishSpecies = DEFAULTS.fishSpecies;
+  }
+
   const icalIn = document.getElementById('s-ical-url').value.trim(); CFG.icalUrl = icalIn || DEFAULT_ICAL;
   const bgIn   = document.getElementById('s-bg').value.trim();       CFG.bg     = bgIn   || DEFAULT_BG;
   CFG.timeFmt  = document.getElementById('s-timefmt').value;
   CFG.tempUnit = document.getElementById('s-tempunit').value;
-  
   const ac = document.querySelector('.color-swatch.active'); if (ac) CFG.accentColor = ac.dataset.color;
 
   localStorage.setItem('fishDash11', JSON.stringify(CFG));
   closeSettings();
   applySettings();
 
-  // Reload weather/tides/calendar as normal
-  loadWeather(); loadFishingWeather(); loadTides(); loadCalendar(); startFishRefreshCycle();
+  // Reload all live data for new location
+  loadWeather();
+  loadFishingWeather();
+  loadTides();
+  loadCalendar();
+  startFishRefreshCycle();
 
-  // Reset species state — force a fresh load on next panel visit,
-  // but don't fire immediately here to avoid concurrent calls.
+  // Reload species guide immediately for new location
   _speciesHasContent = false;
-  _speciesIsLoading  = false;
-  _speciesLastDone   = 0;
-  _speciesNextAllowed = 0;
-  // Clear day-cache so new location/species gets a fresh AI call
-  try {
-    Object.keys(localStorage).filter(k => k.startsWith('speciesCache_')).forEach(k => localStorage.removeItem(k));
-  } catch(e) {}
-  // If the species panel is currently visible, load it now
-  if (currentPanel === 2) speciesAutoLoad();
+  loadSpeciesLocal();
 }
 
 function resetSettings() {
