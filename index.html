@@ -654,7 +654,7 @@ if (cached) {
   const parsed = JSON.parse(cached);
   if (Date.now() - parsed.timestamp < SPECIES_CACHE_TIME) {
     renderSpecies(parsed.data.species);
-    localStorage.setItem(LAST_CALL_KEY, Date.now());
+    _speciesIsLoading = false; // ADD THIS
     return;
   }
 }
