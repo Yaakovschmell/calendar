@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -56,23 +55,46 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
   gap:10px;
   overflow:hidden;
 }
-##panel-species .wcard {
+
+/* Species panel scroll */
+#panel-species .wcard {
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
-
 .species-scroll-window {
-  position: relative;
+  flex: 1;
   overflow: hidden;
-  height: calc(100% - 85px);
+  position: relative;
+  min-height: 0;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 6%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 6%, black 90%, transparent 100%);
 }
-
 #species-content {
   display: flex;
   flex-direction: column;
   gap: 10px;
   will-change: transform;
 }
+
+.wcard {
+  background: rgba(0,0,0,0.28);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius);
+  padding: 14px 14px 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.wlabel {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
 #weather-main-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
 #weather-icon { font-size:40px; line-height:1; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8)); }
 #weather-temp { font-family:var(--font-serif); font-size:48px; font-weight:400; line-height:1; text-shadow:var(--shadow-text); }
@@ -128,13 +150,13 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
 .fish-report-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
 #fish-last-update { margin-top:8px; font-size:9px; color:rgba(255,255,255,0.6); font-weight:400; }
 
-.species-header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.species-header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; flex-shrink:0; }
 #species-live-badge { display:flex; align-items:center; gap:5px; background:rgba(122,219,160,0.12); border:1px solid rgba(122,219,160,0.28); border-radius:20px; padding:3px 10px; cursor:pointer; transition:background 0.2s; }
 #species-live-badge:hover { background:rgba(122,219,160,0.25); }
 .slive-dot { width:6px; height:6px; background:var(--good); border-radius:50%; animation:livepulse 2s infinite; }
 #species-live-text { font-size:9px; color:var(--good); letter-spacing:1px; font-weight:600; }
-#species-location-sub { font-size:11px; color:rgba(255,255,255,0.75); margin-bottom:10px; font-weight:400; text-shadow:var(--shadow-text); }
-.species-item { background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 13px; margin-bottom:7px; }
+#species-location-sub { font-size:11px; color:rgba(255,255,255,0.75); margin-bottom:10px; font-weight:400; text-shadow:var(--shadow-text); flex-shrink:0; }
+.species-item { background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 13px; }
 .species-item-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; }
 .species-name { font-family:var(--font-serif); font-size:18px; color:#fff; font-weight:600; text-shadow:var(--shadow-text); }
 .species-score-row { display:flex; align-items:center; gap:6px; }
@@ -149,7 +171,7 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
 .sf-good { background:rgba(122,219,160,0.14); border:1px solid rgba(122,219,160,0.25); color:var(--good); }
 .sf-warn { background:rgba(232,201,122,0.14); border:1px solid rgba(232,201,122,0.25); color:var(--warn); }
 .sf-bad  { background:rgba(240,122,122,0.14); border:1px solid rgba(240,122,122,0.3);  color:var(--bad); }
-#species-last-update { font-size:9px; color:rgba(255,255,255,0.55); margin-top:6px; }
+#species-last-update { font-size:9px; color:rgba(255,255,255,0.55); margin-top:6px; flex-shrink:0; }
 
 #tide-list { display:flex; flex-direction:column; gap:7px; margin-top:6px; }
 .tide-item { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; background:rgba(0,0,0,0.32); border:1px solid rgba(255,255,255,0.12); border-radius:10px; }
@@ -306,30 +328,25 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
           </div>
         </div>
 
-       <!-- PANEL 2: SPECIES ENGINE -->
-<div class="carousel-panel" id="panel-species">
-  <div class="wcard">
-    <div class="species-header-row">
-      <div class="wlabel" style="margin-bottom:0">🐟 Species Conditions</div>
-      <div id="species-live-badge" onclick="renderSpeciesEngine()">
-        <div class="slive-dot"></div>
-        <span id="species-live-text">LIVE</span>
-      </div>
-    </div>
-
-    <div id="species-location-sub">Loading…</div>
-
-    <div class="species-scroll-window">
-      <div id="species-content">
-        <div class="loading" style="font-size:12px;padding:12px 0">
-          Loading conditions…
+        <!-- PANEL 2: SPECIES ENGINE -->
+        <div class="carousel-panel" id="panel-species">
+          <div class="wcard" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
+            <div class="species-header-row">
+              <div class="wlabel" style="margin-bottom:0">🐟 Species Conditions</div>
+              <div id="species-live-badge" onclick="renderSpeciesEngine()">
+                <div class="slive-dot"></div>
+                <span id="species-live-text">LIVE</span>
+              </div>
+            </div>
+            <div id="species-location-sub">Loading…</div>
+            <div class="species-scroll-window">
+              <div id="species-content">
+                <div class="loading" style="font-size:12px;padding:12px 0">Loading conditions…</div>
+              </div>
+            </div>
+            <div id="species-last-update"></div>
+          </div>
         </div>
-      </div>
-    </div>
-
-    <div id="species-last-update"></div>
-  </div>
-</div>
 
         <!-- PANEL 3: TIDES -->
         <div class="carousel-panel" id="panel-tides">
@@ -382,13 +399,13 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
         <div class="s-field full">
           <label>City / Location</label>
           <div class="autocomplete-wrap">
-            <input id="s-city" placeholder="Jupiter, FL" autocomplete="off" oninput="acDebounce('s-city','ac-weather','weather')">
+            <input id="s-city" placeholder="Pikesville, MD" autocomplete="off" oninput="acDebounce('s-city','ac-weather','weather')">
             <div class="autocomplete-list" id="ac-weather"></div>
           </div>
           <div class="geo-status" id="geo-weather-status"></div>
         </div>
-        <div class="s-field"><label>Latitude</label><input id="s-lat" placeholder="26.9342"></div>
-        <div class="s-field"><label>Longitude</label><input id="s-lon" placeholder="-80.0942"></div>
+        <div class="s-field"><label>Latitude</label><input id="s-lat" placeholder="39.3923"></div>
+        <div class="s-field"><label>Longitude</label><input id="s-lon" placeholder="-76.6661"></div>
       </div>
     </div>
 
@@ -398,7 +415,7 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
         <div class="s-field full">
           <label>Fishing Spot (type to search)</label>
           <div class="autocomplete-wrap">
-            <input id="s-fish-name" placeholder="Juno Beach, FL" autocomplete="off" oninput="acDebounce('s-fish-name','ac-fish','fish')">
+            <input id="s-fish-name" placeholder="Dundee Creek, Middle River MD" autocomplete="off" oninput="acDebounce('s-fish-name','ac-fish','fish')">
             <div class="autocomplete-list" id="ac-fish"></div>
           </div>
           <div class="geo-status" id="geo-fish-status"></div>
@@ -415,16 +432,16 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
           <label>Nearby Spots</label>
           <div class="s-presets" id="s-fish-presets"><span style="font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">Select a location above</span></div>
         </div>
-        <div class="s-field"><label>Latitude</label><input id="s-fish-lat" placeholder="26.8701"></div>
-        <div class="s-field"><label>Longitude</label><input id="s-fish-lon" placeholder="-80.0534"></div>
+        <div class="s-field"><label>Latitude</label><input id="s-fish-lat" placeholder="39.3333"></div>
+        <div class="s-field"><label>Longitude</label><input id="s-fish-lon" placeholder="-76.4167"></div>
         <div class="s-field full">
           <label>NOAA Tide Station ID</label>
-          <input id="s-tide-station" placeholder="8722669">
+          <input id="s-tide-station" placeholder="8574680">
           <div class="s-note">Auto-filled on location select. Find manually at tidesandcurrents.noaa.gov/stations.html</div>
         </div>
         <div class="s-field full">
           <label>Target Species (comma-separated)</label>
-          <input id="s-fish-species" placeholder="Snook, Tarpon, Redfish, Flounder">
+          <input id="s-fish-species" placeholder="Northern Snakehead, Largemouth Bass, Striped Bass, White Perch, Catfish">
           <div class="s-note">Auto-suggested from location. Species panel scores each one live against current conditions.</div>
         </div>
       </div>
@@ -560,15 +577,15 @@ const SPECIES_RULES = {
     season:[1,1,2,3,3,3,3,3,2,2,1,1], tempRange:[65,86], tempKill:[42,96],
     windMax:20, tidePref:'any', moonBonus:'none', pressurePref:'any', cloudPref:'overcast', timeOfDay:'dawn',
     baits:['Hollow body frog','Chatter bait','Swimbait (paddle tail)','Buzz bait over mats','Weedless soft plastic'],
-    spots:['Mattawoman Creek lily pad fields','Patuxent River grass flats','Potomac River vegetation mats','Shallow marshy coves (2–4ft)','Stump fields with hydrilla'],
+    spots:['Dundee Creek lily pad areas','Middle River vegetation mats','Patuxent River grass flats','Potomac River vegetation mats','Shallow marshy coves (2–4ft)','Stump fields with hydrilla','Mattawoman Creek lily pad fields'],
     tactics:['Walk hollow frog over lily pads — pause in openings','Punch weighted jig through hydrilla mats','Burn buzz bait over mats at dawn','Slow roll chatter bait along weedline edge'],
-    notes:{cold:'Snakehead dormant below 50°F in deep holes.',hot:'Summer is peak — best topwater action at dawn over mats.'}
+    notes:{cold:'Snakehead dormant below 50°F in deep holes.',hot:'Summer is peak — best topwater action at dawn over mats. Dundee Creek grass beds prime.'}
   },
   'Largemouth Bass': {
     season:[2,3,3,3,2,2,1,1,2,3,3,2], tempRange:[62,80], tempKill:[38,95],
     windMax:20, tidePref:'any', moonBonus:'either', pressurePref:'stable', cloudPref:'overcast', timeOfDay:'dawn',
     baits:['Texas-rig plastic worm (10")','Hollow body frog','Spinnerbait','Football jig','Topwater walking bait','Swimbait'],
-    spots:['Vegetation edges and pad fields','Dock pilings near deep water','Laydowns and timber','Point ends on wind-blown banks','Steep drop-offs near flat transitions'],
+    spots:['Vegetation edges and pad fields','Dock pilings near deep water','Laydowns and timber','Point ends on wind-blown banks','Steep drop-offs near flat transitions','Dundee Creek grass edges'],
     tactics:['Flip and pitch heavy cover at dawn','Work topwater frog over lily pads with long pauses','Slow roll spinnerbait along weedline','Drop shot finesse worm near points'],
     notes:{cold:'Suspend jerkbait near structure — one twitch, 5-second pause. Very slow.',hot:'Dawn topwater only. Move to 18–25ft structure by mid-morning.'}
   },
@@ -602,15 +619,11 @@ function scoreSpecies(name, rule, cond) {
   const { month, hour, tempF, windMph, pressureHpa, cloudPct, precipIn, moonFrac, moonIllum } = cond;
   let score = 0;
   const factors = [];
-
-  // Season (0–25)
   const seas = rule.season[month];
   const seasonPts = seas === 3 ? 25 : seas === 2 ? 16 : 5;
   score += seasonPts;
   const MO = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   factors.push({ label: MO[month]+' season', delta: seasonPts, note: seas===3?'peak':seas===2?'good':'slow' });
-
-  // Temperature (0–25)
   let tempPts = 0;
   if (tempF !== null) {
     const [tLo, tHi] = rule.tempRange;
@@ -625,8 +638,6 @@ function scoreSpecies(name, rule, cond) {
                    : `${Math.round(tempF)}°F — ideal ${rule.tempRange[0]}–${rule.tempRange[1]}°F`;
     factors.push({ label: 'Temp', delta: tempPts, note: tempNote });
   }
-
-  // Wind (0–15)
   let windPts = 0;
   if (windMph !== null) {
     if (windMph <= 5) windPts = 15;
@@ -636,8 +647,6 @@ function scoreSpecies(name, rule, cond) {
     score += windPts;
     factors.push({ label: 'Wind', delta: windPts, note: `${Math.round(windMph)} mph (max ideal: ${rule.windMax})` });
   }
-
-  // Moon (0–10)
   const newMoon  = moonFrac < 0.07 || moonFrac > 0.93;
   const fullMoon = Math.abs(moonFrac - 0.5) < 0.05;
   let moonPts = 3;
@@ -647,8 +656,6 @@ function scoreSpecies(name, rule, cond) {
   else if (newMoon || fullMoon) moonPts = 6;
   score += moonPts;
   factors.push({ label: 'Moon', delta: moonPts, note: newMoon?'New moon':fullMoon?'Full moon':`${moonIllum}% illuminated` });
-
-  // Pressure (0–10)
   let presPts = 0;
   if (pressureHpa !== null) {
     const stable  = pressureHpa > 1010 && pressureHpa < 1022;
@@ -662,8 +669,6 @@ function scoreSpecies(name, rule, cond) {
     score += presPts;
     factors.push({ label: 'Pressure', delta: presPts, note: `${Math.round(pressureHpa)} hPa — ${stable?'stable':'unsettled'}` });
   }
-
-  // Cloud (0–5)
   let cloudPts = 3;
   if (cloudPct !== null) {
     const ov = cloudPct > 60, su = cloudPct < 30;
@@ -674,8 +679,6 @@ function scoreSpecies(name, rule, cond) {
     score += cloudPts;
     factors.push({ label: 'Sky', delta: cloudPts, note: `${cloudPct}% — ${ov?'overcast':su?'sunny':'partly cloudy'}` });
   }
-
-  // Time of day (0–10)
   const dawn = hour >= 5 && hour <= 8;
   const dusk = hour >= 18 && hour <= 20;
   const night= hour >= 21 || hour <= 4;
@@ -687,7 +690,6 @@ function scoreSpecies(name, rule, cond) {
   else if (dawn || dusk)                        timePts = 5;
   score += timePts;
   factors.push({ label: 'Time', delta: timePts, note: dawn?'Dawn window':dusk?'Dusk window':night?'Night active':'Midday (suboptimal)' });
-
   return { score: Math.min(100, Math.round(score)), factors };
 }
 
@@ -707,7 +709,7 @@ function renderSpeciesEngine() {
     moonIllum:   moon.illum,
   };
 
-  const speciesList = (CFG.fishSpecies || 'Snook, Redfish, Flounder')
+  const speciesList = (CFG.fishSpecies || 'Northern Snakehead, Largemouth Bass, Striped Bass, White Perch, Catfish')
     .split(',').map(s => s.trim()).filter(Boolean);
 
   const scored = speciesList.map(name => {
@@ -741,7 +743,6 @@ function renderSpeciesEngine() {
       const cls = f.delta>=8?'sf-good':f.delta>=4?'sf-warn':'sf-bad';
       return `<span class="species-factor ${cls}">${f.label}: ${f.note}</span>`;
     }).join('');
-    
     const noteHTML = s.note ? `<div class="species-detail" style="color:rgba(255,200,120,0.9);font-style:italic">⚠️ ${s.note.slice(0,90)}${s.note.length>90?'…':''}</div>` : '';
     const tacticHTML = s.tactics.map(t=>`<span class="species-factor sf-warn">→ ${t}</span>`).join('');
     return `<div class="species-item">
@@ -759,8 +760,9 @@ function renderSpeciesEngine() {
       <div class="species-factors" style="margin-top:4px">${tacticHTML}</div>
     </div>`;
   }).join('');
-  
-setupSpeciesAutoScroll();
+
+  setupSpeciesAutoScroll();
+
   document.getElementById('species-location-sub').textContent =
     `${CFG.fishName} · ${MONTHS[cond.month]}`
     + (cond.tempF ? ` · ${cond.tempF}°F` : '')
@@ -770,8 +772,64 @@ setupSpeciesAutoScroll();
     'Scored live at ' + now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
 }
 
+// ═══════════════════════════════════════════════════
+//  SPECIES AUTO-SCROLL — smooth continuous loop
+// ═══════════════════════════════════════════════════
+let speciesScrollTimer = null;
+
+function setupSpeciesAutoScroll() {
+  // Cancel any prior scroll loop
+  if (speciesScrollTimer) {
+    clearTimeout(speciesScrollTimer);
+    speciesScrollTimer = null;
+  }
+
+  const content = document.getElementById('species-content');
+  if (!content) return;
+
+  // Reset position immediately (no transition)
+  content.style.transition = 'none';
+  content.style.transform = 'translateY(0px)';
+
+  // Wait for layout to settle, then measure and begin
+  speciesScrollTimer = setTimeout(() => {
+    const win = content.parentElement; // .species-scroll-window
+    if (!win) return;
+
+    const contentH = content.scrollHeight;
+    const windowH  = win.clientHeight;
+    const overflow = contentH - windowH;
+
+    if (overflow <= 20) return; // Nothing to scroll
+
+    const PX_PER_SEC = 30;   // scroll speed
+    const PAUSE_TOP  = 2000; // ms pause at top
+    const PAUSE_BOT  = 2500; // ms pause at bottom
+
+    function scrollDown() {
+      const travelMs = (overflow / PX_PER_SEC) * 1000;
+      content.style.transition = `transform ${travelMs}ms linear`;
+      content.style.transform  = `translateY(-${overflow}px)`;
+      speciesScrollTimer = setTimeout(pauseAtBottom, travelMs);
+    }
+
+    function pauseAtBottom() {
+      speciesScrollTimer = setTimeout(scrollUp, PAUSE_BOT);
+    }
+
+    function scrollUp() {
+      content.style.transition = 'none';
+      content.style.transform  = 'translateY(0px)';
+      speciesScrollTimer = setTimeout(scrollDown, PAUSE_TOP);
+    }
+
+    // Kick off after initial pause at top
+    speciesScrollTimer = setTimeout(scrollDown, PAUSE_TOP);
+  }, 120);
+}
+
 // ═══════════════════════════════════════
-//  CONFIG
+//  CONFIG  — HOME: Pikesville MD | FISH: Dundee Creek / Middle River MD
 // ═══════════════════════════════════════
 const DEFAULT_BG   = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2400';
 const DEFAULT_ICAL = 'https://calendar.google.com/calendar/ical/aaronspero1%40gmail.com/private-fcf40194d406df57c8aaba1dbef1c70c/basic.ics';
@@ -781,24 +839,53 @@ const CORS_PROXIES = [
   u => `https://thingproxy.freeboard.io/fetch/${u}`,
 ];
 const DEFAULTS = {
-  city:'Jupiter, Florida', lat:26.9342, lon:-80.0942,
-  fishName:'Juno Beach, Florida', fishLat:26.8701, fishLon:-80.0534,
-  fishSpecies:'Snook, Tarpon, Redfish, Flounder, Cobia',
-  tideStation:'8722669', waterType:'auto',
+  // 7201 Park Heights Ave, Baltimore MD 21208 — Pikesville
+  city:'Pikesville, Maryland', lat:39.3692, lon:-76.6738,
+  // Dundee Creek / Middle River, MD
+  fishName:'Dundee Creek, Middle River MD', fishLat:39.3333, fishLon:-76.4167,
+  fishSpecies:'Northern Snakehead, Largemouth Bass, Striped Bass, White Perch, Catfish, Bluefish',
+  tideStation:'8574680', waterType:'auto',
   icalUrl:DEFAULT_ICAL, bg:DEFAULT_BG,
   accentColor:'#e8c97a', timeFmt:'12', tempUnit:'F',
 };
 function getCFG(){ try{return Object.assign({},DEFAULTS,JSON.parse(localStorage.getItem('fishDash14')||'{}'));}catch(e){return Object.assign({},DEFAULTS);} }
 let CFG = getCFG();
 
-function autoSpecies(lat,lon,name){
-  const n=(name||'').toLowerCase();
-  if(['lake','reservoir','pond','creek park','river park'].some(w=>n.includes(w))) return 'Largemouth Bass, Crappie, Catfish, Bluegill, Smallmouth Bass';
-  if(lat>=24&&lat<27.5&&lon>-82&&lon<-79.5) return 'Snook, Tarpon, Redfish, Flounder, Cobia';
-  if(lat<25.5&&lon>-81.5&&lon<-79.5) return 'Tarpon, Snook, Redfish, Flounder';
-  if(lon<=-88&&lat>=25&&lat<=33) return 'Redfish, Flounder, Cobia, Catfish';
-  if(lat>=36.5&&lat<=40&&lon>=-77.5&&lon<=-74) return 'Striped Bass, White Perch, Catfish, Bluefish, Northern Snakehead, Flounder';
-  if(lat>=40&&lat<=43) return 'Striped Bass, Bluefish, Flounder';
+// ═══════════════════════════════════════════════════════
+//  AUTO-SPECIES — returns best species list by lat/lon
+// ═══════════════════════════════════════════════════════
+function autoSpecies(lat, lon, name) {
+  const n = (name || '').toLowerCase();
+
+  // Pure freshwater keywords → freshwater mix
+  if (['lake ', 'reservoir', 'pond', 'creek park', 'river park'].some(w => n.includes(w)))
+    return 'Largemouth Bass, Northern Snakehead, Crappie, Catfish, Bluegill, Smallmouth Bass';
+
+  // Chesapeake Bay tidal tributaries / Middle River / Dundee Creek area (MD)
+  if (lat >= 38.5 && lat <= 39.8 && lon >= -77.5 && lon <= -75.8)
+    return 'Northern Snakehead, Largemouth Bass, Striped Bass, White Perch, Catfish, Bluefish';
+
+  // Broad Chesapeake Bay / mid-Atlantic tidal (VA–MD–DE)
+  if (lat >= 36.5 && lat <= 40 && lon >= -77.5 && lon <= -74)
+    return 'Striped Bass, White Perch, Catfish, Bluefish, Northern Snakehead, Flounder';
+
+  // South Florida (SE coast)
+  if (lat >= 24 && lat < 27.5 && lon > -82 && lon < -79.5)
+    return 'Snook, Tarpon, Redfish, Flounder, Cobia';
+
+  // Florida Keys / extreme south FL
+  if (lat < 25.5 && lon > -81.5 && lon < -79.5)
+    return 'Tarpon, Snook, Redfish, Flounder';
+
+  // Gulf Coast
+  if (lon <= -88 && lat >= 25 && lat <= 33)
+    return 'Redfish, Flounder, Cobia, Catfish';
+
+  // Mid-Atlantic/Northeast coast
+  if (lat >= 40 && lat <= 43)
+    return 'Striped Bass, Bluefish, Flounder';
+
+  // Generic fallback
   return 'Striped Bass, Bluefish, Flounder, Catfish';
 }
 
@@ -829,7 +916,10 @@ function updateCarouselPos(anim=true){
   document.querySelectorAll('.c-dot').forEach((d,i)=>d.classList.toggle('active',i===currentPanel));
   document.getElementById('carousel-label').textContent=PANEL_LABELS[currentPanel];
 }
-function goToPanel(idx){currentPanel=idx;updateCarouselPos(true);restartCarouselAuto();if(idx===2&&speciesWeatherCache)renderSpeciesEngine();}
+function goToPanel(idx){
+  currentPanel=idx;updateCarouselPos(true);restartCarouselAuto();
+  if(idx===2&&speciesWeatherCache)renderSpeciesEngine();
+}
 function nextPanel(){currentPanel=(currentPanel+1)%4;updateCarouselPos(true);if(currentPanel===2&&speciesWeatherCache)renderSpeciesEngine();}
 function startCarouselAuto(){clearInterval(carouselAutoTimer);carouselAutoTimer=setInterval(()=>{if(!carouselPaused)nextPanel();},CAROUSEL_INTERVAL);}
 function restartCarouselAuto(){clearInterval(carouselAutoTimer);startCarouselAuto();}
@@ -950,6 +1040,7 @@ async function pickAC(type,label,lat,lon,inputId,listId){
   } else if(type==='fish'){
     document.getElementById('s-fish-lat').value=lat.toFixed(4);
     document.getElementById('s-fish-lon').value=lon.toFixed(4);
+    // Auto-set species based on new location
     document.getElementById('s-fish-species').value=autoSpecies(lat,lon,label);
     const st=document.getElementById('geo-fish-status');
     st.textContent='📍 Finding tide station…'; st.style.color='var(--warn)';
@@ -1099,7 +1190,6 @@ function loadFishingWeather(){
 function computeFishing(data){
   const c=data.current,daily=data.daily;
   const wind=c.wind_speed_10m,tempF=c.temperature_2m*9/5+32,pres=c.pressure_msl,cloud=c.cloud_cover,precip=c.precipitation||0;
-  const species=CFG.fishSpecies||'fish';
   const now=new Date(),hour=now.getHours(),month=now.getMonth();
   const moon=computeMoon();
   const moonScore=moon.frac<0.1||moon.frac>0.9?9:Math.abs(moon.frac-0.5)<0.05?8:7;
@@ -1280,56 +1370,7 @@ function renderCal(){
   for(let i=1;i<=rem;i++)html+=`<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
   document.getElementById('cal-grid').innerHTML=html;
 }
-function setupSpeciesAutoScroll() {
-  const container = document.querySelector('#panel-species .wcard');
-  const content = document.getElementById('species-content');
 
-  if (!container || !content) return;
-
-  content.style.transition = 'none';
-  content.style.transform = 'translateY(0)';
-
-  const visibleHeight = container.clientHeight - 20;
-  const contentHeight = content.scrollHeight;
-  const overflow = contentHeight - visibleHeight;
-
-  if (overflow <= 0) return;
-
-  const pixelsPerSecond = 28;
-  const travelTime = overflow / pixelsPerSecond;
-
-  let state = 'top';
-
-  function loopScroll() {
-    if (state === 'top') {
-      setTimeout(() => {
-        content.style.transition = `transform ${travelTime}s linear`;
-        content.style.transform = `translateY(-${overflow}px)`;
-        state = 'bottom';
-      }, 2500);
-    } else {
-      setTimeout(() => {
-        content.style.transition = 'none';
-        content.style.transform = 'translateY(0)';
-        state = 'top';
-
-        requestAnimationFrame(() => {
-          requestAnimationFrame(loopScroll);
-        });
-      }, 2500);
-    }
-  }
-
-  content.addEventListener('transitionend', function handler() {
-    content.removeEventListener('transitionend', handler);
-
-    if (state === 'bottom') {
-      loopScroll();
-    }
-  });
-
-  loopScroll();
-}
 function renderUpcoming(){
   const now=new Date(),today=now.toISOString().slice(0,10);
   const up=allEvents
