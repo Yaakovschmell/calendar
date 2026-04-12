@@ -188,33 +188,57 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
 .solar-label { font-size:8px; color:var(--accent); letter-spacing:1.5px; text-transform:uppercase; font-weight:600; }
 .solar-value { font-family:var(--font-serif); font-size:16px; color:#fff; margin-top:3px; font-weight:400; text-shadow:var(--shadow-text); }
 
-#col-right { background:rgba(255,255,255,0.04); border-left:1px solid rgba(255,255,255,0.08); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+/* ════════════════════════════════════════
+   CALENDAR COLUMN — improved readability
+   ════════════════════════════════════════ */
+#col-right {
+  background: rgba(4, 10, 22, 0.78);
+  border-left: 1px solid rgba(255,255,255,0.10);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  display:flex; flex-direction:column; height:100vh; overflow:hidden;
+}
 #cal-block { flex:1; padding:18px 18px 10px; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
 #cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-shrink:0; }
-#cal-month { font-family:var(--font-serif); font-size:32px; color:#fff; font-weight:400; letter-spacing:0.5px; text-shadow:var(--shadow-text); }
+#cal-month { font-family:var(--font-serif); font-size:32px; color:#fff; font-weight:400; letter-spacing:0.5px; text-shadow: 0 2px 16px rgba(0,0,0,1), 0 1px 4px rgba(0,0,0,1); }
 #cal-right-ctrl { display:flex; align-items:center; gap:8px; }
-#cal-status { font-size:10px; color:rgba(255,255,255,0.65); font-style:italic; }
+#cal-status { font-size:10px; color:rgba(255,255,255,0.7); font-style:italic; }
 #cal-nav { display:flex; gap:4px; }
-#cal-nav button { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#fff; width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:15px; transition:background 0.2s; }
+#cal-nav button { background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.20); color:#fff; width:30px; height:30px; border-radius:8px; cursor:pointer; font-size:15px; transition:background 0.2s; }
 #cal-nav button:hover { background:rgba(232,201,122,0.22); }
 #cal-grid { display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:1fr; gap:4px; flex:1; min-height:0; }
-.cal-dow { text-align:center; font-size:9px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:2px; padding-bottom:6px; display:flex; align-items:center; justify-content:center; }
-.cal-day { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:7px 7px 4px; display:flex; flex-direction:column; overflow:hidden; transition:background 0.15s; min-height:0; }
-.cal-day:hover { background:rgba(255,255,255,0.09); }
-.cal-day-num { font-family:var(--font-serif); font-size:17px; color:#fff; font-weight:400; line-height:1; flex-shrink:0; margin-bottom:3px; text-shadow:var(--shadow-text); }
-.cal-day.today { background:rgba(232,201,122,0.2); border-color:rgba(232,201,122,0.6); }
+.cal-dow { text-align:center; font-size:9px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:2px; padding-bottom:6px; display:flex; align-items:center; justify-content:center; text-shadow: 0 1px 8px rgba(0,0,0,0.9); }
+.cal-day {
+  background: rgba(0,0,0,0.54);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius:10px; padding:7px 7px 4px; display:flex; flex-direction:column; overflow:hidden; transition:background 0.15s; min-height:0;
+}
+.cal-day:hover { background: rgba(20,30,50,0.82); }
+.cal-day-num { font-family:var(--font-serif); font-size:17px; color:#fff; font-weight:400; line-height:1; flex-shrink:0; margin-bottom:3px; text-shadow: 0 1px 8px rgba(0,0,0,1), 0 0 16px rgba(0,0,0,0.9); }
+.cal-day.today { background: rgba(232,201,122,0.22); border-color: rgba(232,201,122,0.65); }
 .cal-day.today .cal-day-num { color:var(--accent); font-weight:600; }
-.cal-day.other-month { opacity:0.3; }
+.cal-day.other-month { opacity:0.38; background: rgba(0,0,0,0.32); }
 .cal-events { display:flex; flex-direction:column; gap:2px; overflow:hidden; flex:1; }
-.cal-event { font-size:8.5px; font-weight:600; background:var(--accent); color:#1a1000; border-radius:3px; padding:2px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.45; }
-.cal-event.multiday { background:rgba(122,184,240,0.7); color:#fff; }
-.cal-more { font-size:8px; color:rgba(255,255,255,0.6); padding:0 2px; }
-#upcoming-block { padding:10px 18px 16px; flex-shrink:0; border-top:1px solid rgba(255,255,255,0.08); }
+.cal-event { font-size:8.5px; font-weight:700; background:var(--accent); color:#1a1000; border-radius:3px; padding:2px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.45; text-shadow:none; }
+.cal-event.multiday { background:rgba(122,184,240,0.85); color:#fff; font-weight:700; }
+.cal-more { font-size:8px; color:rgba(255,255,255,0.75); padding:0 2px; }
+
+#upcoming-block {
+  padding:10px 18px 16px;
+  flex-shrink:0;
+  border-top:1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.28);
+}
 .section-label-sm { font-size:9px; font-weight:600; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:9px; }
 #upcoming-list { display:flex; flex-direction:column; gap:5px; }
-.upcoming-item { display:flex; align-items:center; gap:10px; padding:9px 12px; background:rgba(0,0,0,0.32); border:1px solid rgba(255,255,255,0.1); border-radius:9px; border-left:2px solid var(--accent); }
+.upcoming-item {
+  display:flex; align-items:center; gap:10px; padding:9px 12px;
+  background: rgba(0,0,0,0.62);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius:9px; border-left:2px solid var(--accent);
+}
 .upcoming-date { font-family:var(--font-serif); font-size:13px; color:var(--accent); white-space:nowrap; min-width:95px; font-weight:400; text-shadow:var(--shadow-text); }
-.upcoming-title { font-size:12px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:400; text-shadow:var(--shadow-text); }
+.upcoming-title { font-size:12px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500; text-shadow:var(--shadow-text); }
 
 .autocomplete-wrap { position:relative; flex:1; }
 .autocomplete-list { position:absolute; top:100%; left:0; right:0; z-index:999; background:rgba(8,18,34,0.97); border:1px solid rgba(255,255,255,0.2); border-top:none; border-radius:0 0 8px 8px; max-height:200px; overflow-y:auto; backdrop-filter:blur(20px); }
@@ -223,7 +247,7 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
 .ac-item:last-child { border-bottom:none; }
 .ac-item:hover { background:rgba(232,201,122,0.18); color:var(--accent); }
 
-#settings-btn { position:fixed; top:14px; right:14px; z-index:100; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.2); backdrop-filter:blur(10px); color:#fff; border-radius:50%; width:36px; height:36px; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.2s; }
+#settings-btn { position:fixed; top:14px; right:14px; z-index:100; background:rgba(0,0,0,0.55); border:1px solid rgba(255,255,255,0.2); backdrop-filter:blur(10px); color:#fff; border-radius:50%; width:36px; height:36px; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.2s; }
 #settings-btn:hover { background:rgba(232,201,122,0.22); }
 #settings-panel { display:none; position:fixed; inset:0; z-index:500; background:rgba(4,10,20,0.97); backdrop-filter:blur(30px); overflow-y:auto; padding:40px 30px; }
 .s-inner { max-width:760px; margin:0 auto; }
@@ -747,12 +771,10 @@ function renderSpeciesEngine() {
              tactics: rule.tactics, note };
   }
 
-  // Separate primary (pinned, in user order) vs secondary (sorted by score)
   const primaries = speciesList
     .filter(n => PRIMARY_SPECIES.some(p => n.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(n.toLowerCase())))
     .map(n => buildEntry(n, true));
 
-  // Keep user-defined order for primaries (Snakehead first, Bass second)
   primaries.sort((a,b) => {
     const ai = PRIMARY_SPECIES.findIndex(p => a.name.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(a.name.toLowerCase()));
     const bi = PRIMARY_SPECIES.findIndex(p => b.name.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(b.name.toLowerCase()));
@@ -844,65 +866,40 @@ function renderSpeciesEngine() {
     'Scored live at ' + now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
 }
 
-// ═══════════════════════════════════════════════════
-//  SPECIES AUTO-SCROLL — smooth continuous loop
-// ═══════════════════════════════════════════════════
 let speciesScrollTimer = null;
 
 function setupSpeciesAutoScroll() {
-  // Cancel any prior scroll loop
-  if (speciesScrollTimer) {
-    clearTimeout(speciesScrollTimer);
-    speciesScrollTimer = null;
-  }
-
+  if (speciesScrollTimer) { clearTimeout(speciesScrollTimer); speciesScrollTimer = null; }
   const content = document.getElementById('species-content');
   if (!content) return;
-
-  // Reset position immediately (no transition)
   content.style.transition = 'none';
   content.style.transform = 'translateY(0px)';
-
-  // Wait for layout to settle, then measure and begin
   speciesScrollTimer = setTimeout(() => {
-    const win = content.parentElement; // .species-scroll-window
+    const win = content.parentElement;
     if (!win) return;
-
     const contentH = content.scrollHeight;
     const windowH  = win.clientHeight;
     const overflow = contentH - windowH;
-
-    if (overflow <= 20) return; // Nothing to scroll
-
-    const PX_PER_SEC = 30;   // scroll speed
-    const PAUSE_TOP  = 2000; // ms pause at top
-    const PAUSE_BOT  = 2500; // ms pause at bottom
-
+    if (overflow <= 20) return;
+    const PX_PER_SEC = 30;
+    const PAUSE_TOP  = 2000;
+    const PAUSE_BOT  = 2500;
     function scrollDown() {
       const travelMs = (overflow / PX_PER_SEC) * 1000;
       content.style.transition = `transform ${travelMs}ms linear`;
       content.style.transform  = `translateY(-${overflow}px)`;
       speciesScrollTimer = setTimeout(pauseAtBottom, travelMs);
     }
-
-    function pauseAtBottom() {
-      speciesScrollTimer = setTimeout(scrollUp, PAUSE_BOT);
-    }
-
+    function pauseAtBottom() { speciesScrollTimer = setTimeout(scrollUp, PAUSE_BOT); }
     function scrollUp() {
       content.style.transition = 'none';
       content.style.transform  = 'translateY(0px)';
       speciesScrollTimer = setTimeout(scrollDown, PAUSE_TOP);
     }
-
-    // Kick off after initial pause at top
     speciesScrollTimer = setTimeout(scrollDown, PAUSE_TOP);
   }, 120);
 }
 
-// ═══════════════════════════════════════
-//  CONFIG  — HOME: Pikesville MD | FISH: Dundee Creek / Middle River MD
-// ═══════════════════════════════════════
 const DEFAULT_BG   = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2400';
 const DEFAULT_ICAL = 'https://calendar.google.com/calendar/ical/aaronspero1%40gmail.com/private-fcf40194d406df57c8aaba1dbef1c70c/basic.ics';
 const CORS_PROXIES = [
@@ -910,15 +907,10 @@ const CORS_PROXIES = [
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   u => `https://thingproxy.freeboard.io/fetch/${u}`,
 ];
-// Primary species always get expanded hero cards; secondary get compact cards.
-// The first two entries in fishSpecies are treated as primaries if marked with ★,
-// otherwise the PRIMARY_SPECIES list controls which get hero treatment.
 const PRIMARY_SPECIES = ['Northern Snakehead', 'Largemouth Bass'];
 
 const DEFAULTS = {
-  // 7201 Park Heights Ave, Baltimore MD 21208 — Pikesville
   city:'Pikesville, Maryland', lat:39.3692, lon:-76.6738,
-  // Dundee Creek / Middle River, MD
   fishName:'Dundee Creek, Middle River MD', fishLat:39.3333, fishLon:-76.4167,
   fishSpecies:'Northern Snakehead, Largemouth Bass',
   tideStation:'8574680', waterType:'auto',
@@ -928,41 +920,22 @@ const DEFAULTS = {
 function getCFG(){ try{return Object.assign({},DEFAULTS,JSON.parse(localStorage.getItem('fishDash14')||'{}'));}catch(e){return Object.assign({},DEFAULTS);} }
 let CFG = getCFG();
 
-// ═══════════════════════════════════════════════════════
-//  AUTO-SPECIES — returns best species list by lat/lon
-// ═══════════════════════════════════════════════════════
 function autoSpecies(lat, lon, name) {
   const n = (name || '').toLowerCase();
-
-  // Pure freshwater keywords → snakehead/bass first
   if (['lake ', 'reservoir', 'pond', 'creek park', 'river park'].some(w => n.includes(w)))
     return 'Northern Snakehead, Largemouth Bass, Crappie, Catfish, Bluegill, Smallmouth Bass';
-
-  // Chesapeake Bay tidal tributaries / Middle River / Dundee Creek area (MD)
   if (lat >= 38.5 && lat <= 39.8 && lon >= -77.5 && lon <= -75.8)
     return 'Northern Snakehead, Largemouth Bass';
-
-  // Broad Chesapeake Bay / mid-Atlantic tidal (VA–MD–DE)
   if (lat >= 36.5 && lat <= 40 && lon >= -77.5 && lon <= -74)
     return 'Striped Bass, White Perch, Catfish, Bluefish, Northern Snakehead, Flounder';
-
-  // South Florida (SE coast)
   if (lat >= 24 && lat < 27.5 && lon > -82 && lon < -79.5)
     return 'Snook, Tarpon, Redfish, Flounder, Cobia';
-
-  // Florida Keys / extreme south FL
   if (lat < 25.5 && lon > -81.5 && lon < -79.5)
     return 'Tarpon, Snook, Redfish, Flounder';
-
-  // Gulf Coast
   if (lon <= -88 && lat >= 25 && lat <= 33)
     return 'Redfish, Flounder, Cobia, Catfish';
-
-  // Mid-Atlantic/Northeast coast
   if (lat >= 40 && lat <= 43)
     return 'Striped Bass, Bluefish, Flounder';
-
-  // Generic fallback
   return 'Striped Bass, Bluefish, Flounder, Catfish';
 }
 
@@ -972,9 +945,6 @@ function setWaterType(t){
   ['auto','salt','fresh'].forEach(x=>{ const el=document.getElementById('wt-'+x); if(el)el.classList.toggle('active',x===t); });
 }
 
-// ═══════════════════════════════════════
-//  CAROUSEL
-// ═══════════════════════════════════════
 const PANEL_LABELS=['WEATHER','FISHING','SPECIES','TIDES'];
 let currentPanel=0,carouselAutoTimer=null,carouselPaused=false;
 const CAROUSEL_INTERVAL=18000;
@@ -1010,9 +980,6 @@ window.addEventListener('resize',()=>{
   updateCarouselPos(false);
 });
 
-// ═══════════════════════════════════════
-//  SETTINGS
-// ═══════════════════════════════════════
 function applySettings(){
   document.documentElement.style.setProperty('--accent',CFG.accentColor);
   const bg=document.getElementById('bg');bg.classList.add('fade');
@@ -1086,9 +1053,6 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft'||e.key==='ArrowUp')goToPanel((currentPanel+3)%4);
 });
 
-// ═══════════════════════════════════════
-//  AUTOCOMPLETE
-// ═══════════════════════════════════════
 let acTimers={};
 function acDebounce(i,l,t){clearTimeout(acTimers[i]);acTimers[i]=setTimeout(()=>doAC(i,l,t),320);}
 async function doAC(inputId,listId,type){
@@ -1117,7 +1081,6 @@ async function pickAC(type,label,lat,lon,inputId,listId){
   } else if(type==='fish'){
     document.getElementById('s-fish-lat').value=lat.toFixed(4);
     document.getElementById('s-fish-lon').value=lon.toFixed(4);
-    // Auto-set species based on new location
     document.getElementById('s-fish-species').value=autoSpecies(lat,lon,label);
     const st=document.getElementById('geo-fish-status');
     st.textContent='📍 Finding tide station…'; st.style.color='var(--warn)';
@@ -1153,9 +1116,6 @@ async function findNearestTideStation(lat,lon){
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.autocomplete-wrap'))document.querySelectorAll('.autocomplete-list').forEach(l=>l.innerHTML='');});
 
-// ═══════════════════════════════════════
-//  CLOCK
-// ═══════════════════════════════════════
 function updateClock(){
   const now=new Date();let h=now.getHours(),m=now.getMinutes();
   const amEl=document.getElementById('clock-ampm');
@@ -1170,9 +1130,6 @@ function updateClock(){
 }
 setInterval(updateClock,500); updateClock();
 
-// ═══════════════════════════════════════
-//  WEATHER HELPERS
-// ═══════════════════════════════════════
 const WMO_ICONS={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',80:'🌦',81:'🌧',82:'⛈',95:'⛈',96:'⛈',99:'⛈'};
 const WMO_DESC ={0:'Clear skies',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',80:'Light showers',81:'Rain showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Heavy thunderstorm'};
 const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -1180,9 +1137,6 @@ function fmtTemp(c){return CFG.tempUnit==='F'?Math.round(c*9/5+32)+'°F':Math.ro
 function fmtWind(mph){return Math.round(mph)+' mph';}
 function fmtTime12(iso){const t=new Date(iso.length===16?iso+':00':iso);let h=t.getHours(),m=t.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return`${h}:${String(m).padStart(2,'0')} ${ap}`;}
 
-// ═══════════════════════════════════════
-//  WEATHER
-// ═══════════════════════════════════════
 function loadWeather(){
   const url=`https://api.open-meteo.com/v1/forecast?latitude=${CFG.lat}&longitude=${CFG.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,pressure_msl,cloud_cover,precipitation&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset&temperature_unit=celsius&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FNew_York&forecast_days=7`;
   fetch(url).then(r=>r.json()).then(d=>{
@@ -1222,9 +1176,6 @@ function loadWeather(){
   }).catch(()=>{document.getElementById('weather-desc').textContent='Weather unavailable';document.getElementById('weather-desc').classList.remove('loading');});
 }
 
-// ═══════════════════════════════════════
-//  MOON
-// ═══════════════════════════════════════
 let moonFrac=0;
 function computeMoon(){
   const now=new Date(),known=new Date('2000-01-06T18:14:00Z'),syn=29.53058867;
@@ -1241,9 +1192,6 @@ function computeMoon(){
   return{name,emoji,illum,frac:moonFrac};
 }
 
-// ═══════════════════════════════════════
-//  FISHING PANEL
-// ═══════════════════════════════════════
 const FISH_INTERVAL=5*60;
 let fishCd=FISH_INTERVAL,fishTimer=null;
 function startFishRefreshCycle(){
@@ -1325,9 +1273,6 @@ function computeFishing(data){
   document.getElementById('fish-report-content').innerHTML=html;
 }
 
-// ═══════════════════════════════════════
-//  TIDES
-// ═══════════════════════════════════════
 function loadTides(){
   const today=new Date(),tom=new Date(today);tom.setDate(today.getDate()+1);
   const fmt=d=>`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
@@ -1351,9 +1296,6 @@ function loadTides(){
   }).catch(()=>{document.getElementById('tide-list').innerHTML="<div style='color:rgba(255,255,255,0.65);font-size:12px'>Could not load tides</div>";});
 }
 
-// ═══════════════════════════════════════
-//  CALENDAR
-// ═══════════════════════════════════════
 let allEvents=[],viewMonth=new Date().getMonth(),viewYear=new Date().getFullYear();
 
 function parseIcal(text){
@@ -1455,7 +1397,7 @@ function renderUpcoming(){
     .sort((a,b)=>{const da=a.dtstart?.date||a.dtstart?.dateTime||'',db=b.dtstart?.date||b.dtstart?.dateTime||'';return da.localeCompare(db);})
     .slice(0,5);
   const listEl=document.getElementById('upcoming-list');
-  if(!up.length){listEl.innerHTML=`<div style="color:rgba(255,255,255,0.55);font-size:12px;font-style:italic">No upcoming events</div>`;return;}
+  if(!up.length){listEl.innerHTML=`<div style="color:rgba(255,255,255,0.65);font-size:12px;font-style:italic">No upcoming events</div>`;return;}
   const MOS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   listEl.innerHTML=up.map(ev=>{
     const ds=ev.dtstart?.date||(ev.dtstart?.dateTime||'').slice(0,10);let label='';
@@ -1469,9 +1411,6 @@ function renderUpcoming(){
   }).join('');
 }
 
-// ═══════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════
 viewMonth=new Date().getMonth(); viewYear=new Date().getFullYear();
 window.addEventListener('load',()=>{
   initCarousel();
