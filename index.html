@@ -172,6 +172,9 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
 .sf-warn { background:rgba(232,201,122,0.14); border:1px solid rgba(232,201,122,0.25); color:var(--warn); }
 .sf-bad  { background:rgba(240,122,122,0.14); border:1px solid rgba(240,122,122,0.3);  color:var(--bad); }
 #species-last-update { font-size:9px; color:rgba(255,255,255,0.55); margin-top:6px; flex-shrink:0; }
+.species-hero { border-color: rgba(232,201,122,0.28); background: rgba(0,0,0,0.38); }
+.hero-section-label { font-size:9px; font-weight:600; letter-spacing:2px; color:var(--accent); text-transform:uppercase; margin:6px 0 4px; }
+
 
 #tide-list { display:flex; flex-direction:column; gap:7px; margin-top:6px; }
 .tide-item { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; background:rgba(0,0,0,0.32); border:1px solid rgba(255,255,255,0.12); border-radius:10px; }
@@ -441,8 +444,8 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
         </div>
         <div class="s-field full">
           <label>Target Species (comma-separated)</label>
-          <input id="s-fish-species" placeholder="Northern Snakehead, Largemouth Bass, Striped Bass, White Perch, Catfish">
-          <div class="s-note">Auto-suggested from location. Species panel scores each one live against current conditions.</div>
+          <input id="s-fish-species" placeholder="Northern Snakehead, Largemouth Bass">
+          <div class="s-note">Snakehead &amp; Bass always show as full hero cards. Add more species (comma-separated) for compact secondary cards below them. Auto-suggested when you change location.</div>
         </div>
       </div>
     </div>
@@ -709,10 +712,10 @@ function renderSpeciesEngine() {
     moonIllum:   moon.illum,
   };
 
-  const speciesList = (CFG.fishSpecies || 'Northern Snakehead, Largemouth Bass, Striped Bass, White Perch, Catfish')
+  const speciesList = (CFG.fishSpecies || 'Northern Snakehead, Largemouth Bass')
     .split(',').map(s => s.trim()).filter(Boolean);
 
-  const scored = speciesList.map(name => {
+  function resolveRule(name) {
     let rule = SPECIES_RULES[name];
     if (!rule) {
       const key = Object.keys(SPECIES_RULES).find(k =>
@@ -720,8 +723,16 @@ function renderSpeciesEngine() {
       );
       rule = key ? SPECIES_RULES[key] : null;
     }
+    return rule;
+  }
+
+  function buildEntry(name, isPrimary) {
+    const rule = resolveRule(name);
     if (!rule) {
-      return { name, score: 50, status:'good', factors:[], bait:'Live bait matched to local forage', spot:'Near structure and current edges', tactics:['Match local forage','Work structure edges'], note: null };
+      return { name, isPrimary, score:50, status:'good', factors:[], rule:null,
+               bait:'Live bait matched to local forage', allBaits:['Live bait matched to local forage'],
+               spot:'Near structure and current edges', allSpots:['Near structure and current edges'],
+               tactics:['Match local forage','Work structure edges'], note:null };
     }
     const { score, factors } = scoreSpecies(name, rule, cond);
     const status = score >= 65 ? 'peak' : score >= 40 ? 'good' : 'slow';
@@ -730,36 +741,97 @@ function renderSpeciesEngine() {
     const note = cond.tempF && cond.tempF < rule.tempRange[0] - 8 ? rule.notes.cold
                : cond.tempF && cond.tempF > rule.tempRange[1] + 5  ? rule.notes.hot
                : null;
-    return { name, score, status, factors, bait: rule.baits[idx], spot: rule.spots[sidx], tactics: rule.tactics.slice(0,3), note };
-  }).sort((a,b) => b.score - a.score);
+    return { name, isPrimary, score, status, factors, rule,
+             bait: rule.baits[idx], allBaits: rule.baits,
+             spot: rule.spots[sidx], allSpots: rule.spots,
+             tactics: rule.tactics, note };
+  }
+
+  // Separate primary (pinned, in user order) vs secondary (sorted by score)
+  const primaries = speciesList
+    .filter(n => PRIMARY_SPECIES.some(p => n.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(n.toLowerCase())))
+    .map(n => buildEntry(n, true));
+
+  // Keep user-defined order for primaries (Snakehead first, Bass second)
+  primaries.sort((a,b) => {
+    const ai = PRIMARY_SPECIES.findIndex(p => a.name.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(a.name.toLowerCase()));
+    const bi = PRIMARY_SPECIES.findIndex(p => b.name.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(b.name.toLowerCase()));
+    return ai - bi;
+  });
+
+  const secondaries = speciesList
+    .filter(n => !PRIMARY_SPECIES.some(p => n.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(n.toLowerCase())))
+    .map(n => buildEntry(n, false))
+    .sort((a,b) => b.score - a.score);
+
+  const allScored = [...primaries, ...secondaries];
 
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  document.getElementById('species-content').innerHTML = scored.map(s => {
+
+  function renderHeroCard(s) {
     const sc = s.status==='peak'?'season-peak':s.status==='good'?'season-good':'season-slow';
     const sl = s.status==='peak'?'🔥 Peak':s.status==='good'?'✓ Active':'· Slow';
     const scoreColor = s.score>=65?'var(--good)':s.score>=40?'var(--warn)':'var(--bad)';
-    const topF = [...s.factors].sort((a,b)=>b.delta-a.delta).slice(0,4);
-    const factorHTML = topF.map(f => {
+    const allF = [...s.factors].sort((a,b)=>b.delta-a.delta);
+    const factorHTML = allF.map(f => {
       const cls = f.delta>=8?'sf-good':f.delta>=4?'sf-warn':'sf-bad';
       return `<span class="species-factor ${cls}">${f.label}: ${f.note}</span>`;
     }).join('');
-    const noteHTML = s.note ? `<div class="species-detail" style="color:rgba(255,200,120,0.9);font-style:italic">⚠️ ${s.note.slice(0,90)}${s.note.length>90?'…':''}</div>` : '';
-    const tacticHTML = s.tactics.map(t=>`<span class="species-factor sf-warn">→ ${t}</span>`).join('');
-    return `<div class="species-item">
+    const noteHTML = s.note ? `<div class="species-detail" style="color:rgba(255,200,120,0.9);font-style:italic;margin-bottom:6px">⚠️ ${s.note}</div>` : '';
+    const allBaitsHTML = s.allBaits.map((b,i) =>
+      `<span class="species-factor ${i===0?'sf-good':'sf-warn'}" style="${i===0?'font-weight:600':''}">${i===0?'⭐ ':''}${b}</span>`
+    ).join('');
+    const allSpotsHTML = s.allSpots.map((sp,i) =>
+      `<span class="species-factor ${i===0?'sf-good':'sf-warn'}" style="${i===0?'font-weight:600':''}">${i===0?'📌 ':'📍 '}${sp}</span>`
+    ).join('');
+    const tacticHTML = s.tactics.map((t,i) =>
+      `<span class="species-factor sf-warn" style="${i===0?'font-weight:600':''}">→ ${t}</span>`
+    ).join('');
+    return `<div class="species-item species-hero">
       <div class="species-item-header">
-        <span class="species-name">${s.name}</span>
+        <span class="species-name" style="font-size:22px">${s.name}</span>
         <div class="species-score-row">
-          <span class="species-score-num" style="color:${scoreColor}">${s.score}</span>
+          <span class="species-score-num" style="color:${scoreColor};font-size:28px">${s.score}</span>
           <span class="species-season-badge ${sc}">${sl}</span>
         </div>
       </div>
       ${noteHTML}
-      <div class="species-detail">🎯 <strong>Bait now:</strong> ${s.bait}</div>
-      <div class="species-detail">📍 <strong>Spot:</strong> ${s.spot}</div>
-      <div class="species-factors" style="margin-top:5px">${factorHTML}</div>
-      <div class="species-factors" style="margin-top:4px">${tacticHTML}</div>
+      <div class="hero-section-label">🎯 Baits</div>
+      <div class="species-factors" style="margin-bottom:8px">${allBaitsHTML}</div>
+      <div class="hero-section-label">📍 Spots</div>
+      <div class="species-factors" style="margin-bottom:8px">${allSpotsHTML}</div>
+      <div class="hero-section-label">🧭 Tactics</div>
+      <div class="species-factors" style="margin-bottom:8px">${tacticHTML}</div>
+      <div class="hero-section-label">📊 Conditions</div>
+      <div class="species-factors">${factorHTML}</div>
     </div>`;
-  }).join('');
+  }
+
+  function renderCompactCard(s) {
+    const sc = s.status==='peak'?'season-peak':s.status==='good'?'season-good':'season-slow';
+    const sl = s.status==='peak'?'🔥 Peak':s.status==='good'?'✓ Active':'· Slow';
+    const scoreColor = s.score>=65?'var(--good)':s.score>=40?'var(--warn)':'var(--bad)';
+    const topF = [...s.factors].sort((a,b)=>b.delta-a.delta).slice(0,3);
+    const factorHTML = topF.map(f => {
+      const cls = f.delta>=8?'sf-good':f.delta>=4?'sf-warn':'sf-bad';
+      return `<span class="species-factor ${cls}">${f.label}: ${f.note}</span>`;
+    }).join('');
+    return `<div class="species-item" style="opacity:0.82">
+      <div class="species-item-header">
+        <span class="species-name" style="font-size:15px">${s.name}</span>
+        <div class="species-score-row">
+          <span class="species-score-num" style="color:${scoreColor};font-size:18px">${s.score}</span>
+          <span class="species-season-badge ${sc}">${sl}</span>
+        </div>
+      </div>
+      <div class="species-detail" style="font-size:10px">🎯 ${s.bait} &nbsp;·&nbsp; 📍 ${s.spot}</div>
+      <div class="species-factors" style="margin-top:5px">${factorHTML}</div>
+    </div>`;
+  }
+
+  document.getElementById('species-content').innerHTML = allScored.map(s =>
+    s.isPrimary ? renderHeroCard(s) : renderCompactCard(s)
+  ).join('');
 
   setupSpeciesAutoScroll();
 
@@ -838,12 +910,17 @@ const CORS_PROXIES = [
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   u => `https://thingproxy.freeboard.io/fetch/${u}`,
 ];
+// Primary species always get expanded hero cards; secondary get compact cards.
+// The first two entries in fishSpecies are treated as primaries if marked with ★,
+// otherwise the PRIMARY_SPECIES list controls which get hero treatment.
+const PRIMARY_SPECIES = ['Northern Snakehead', 'Largemouth Bass'];
+
 const DEFAULTS = {
   // 7201 Park Heights Ave, Baltimore MD 21208 — Pikesville
   city:'Pikesville, Maryland', lat:39.3692, lon:-76.6738,
   // Dundee Creek / Middle River, MD
   fishName:'Dundee Creek, Middle River MD', fishLat:39.3333, fishLon:-76.4167,
-  fishSpecies:'Northern Snakehead, Largemouth Bass, Striped Bass, White Perch, Catfish, Bluefish',
+  fishSpecies:'Northern Snakehead, Largemouth Bass',
   tideStation:'8574680', waterType:'auto',
   icalUrl:DEFAULT_ICAL, bg:DEFAULT_BG,
   accentColor:'#e8c97a', timeFmt:'12', tempUnit:'F',
@@ -857,13 +934,13 @@ let CFG = getCFG();
 function autoSpecies(lat, lon, name) {
   const n = (name || '').toLowerCase();
 
-  // Pure freshwater keywords → freshwater mix
+  // Pure freshwater keywords → snakehead/bass first
   if (['lake ', 'reservoir', 'pond', 'creek park', 'river park'].some(w => n.includes(w)))
-    return 'Largemouth Bass, Northern Snakehead, Crappie, Catfish, Bluegill, Smallmouth Bass';
+    return 'Northern Snakehead, Largemouth Bass, Crappie, Catfish, Bluegill, Smallmouth Bass';
 
   // Chesapeake Bay tidal tributaries / Middle River / Dundee Creek area (MD)
   if (lat >= 38.5 && lat <= 39.8 && lon >= -77.5 && lon <= -75.8)
-    return 'Northern Snakehead, Largemouth Bass, Striped Bass, White Perch, Catfish, Bluefish';
+    return 'Northern Snakehead, Largemouth Bass';
 
   // Broad Chesapeake Bay / mid-Atlantic tidal (VA–MD–DE)
   if (lat >= 36.5 && lat <= 40 && lon >= -77.5 && lon <= -74)
