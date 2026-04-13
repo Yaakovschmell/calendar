@@ -189,7 +189,7 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
 .solar-value { font-family:var(--font-serif); font-size:16px; color:#fff; margin-top:3px; font-weight:400; text-shadow:var(--shadow-text); }
 
 /* ════════════════════════════════════════
-   CALENDAR COLUMN — improved readability
+   CALENDAR COLUMN
    ════════════════════════════════════════ */
 #col-right {
   background: rgba(4, 10, 22, 0.78);
@@ -213,11 +213,13 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
   border: 1px solid rgba(255,255,255,0.16);
   border-radius:10px; padding:7px 7px 4px; display:flex; flex-direction:column; overflow:hidden; transition:background 0.15s; min-height:0;
 }
-.cal-day:hover { background: rgba(20,30,50,0.82); }
-.cal-day-num { font-family:var(--font-serif); font-size:17px; color:#fff; font-weight:400; line-height:1; flex-shrink:0; margin-bottom:3px; text-shadow: 0 1px 8px rgba(0,0,0,1), 0 0 16px rgba(0,0,0,0.9); }
+.cal-day:not(.other-month) { cursor:pointer; }
+.cal-day:not(.other-month):hover { background: rgba(20,30,50,0.82); }
+.cal-day:not(.other-month):hover .cal-day-num { color: var(--accent); }
+.cal-day-num { font-family:var(--font-serif); font-size:17px; color:#fff; font-weight:400; line-height:1; flex-shrink:0; margin-bottom:3px; text-shadow: 0 1px 8px rgba(0,0,0,1), 0 0 16px rgba(0,0,0,0.9); transition: color 0.15s; }
 .cal-day.today { background: rgba(232,201,122,0.22); border-color: rgba(232,201,122,0.65); }
 .cal-day.today .cal-day-num { color:var(--accent); font-weight:600; }
-.cal-day.other-month { opacity:0.38; background: rgba(0,0,0,0.32); }
+.cal-day.other-month { opacity:0.38; background: rgba(0,0,0,0.32); cursor:default; }
 .cal-events { display:flex; flex-direction:column; gap:2px; overflow:hidden; flex:1; }
 .cal-event { font-size:8.5px; font-weight:700; background:var(--accent); color:#1a1000; border-radius:3px; padding:2px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.45; text-shadow:none; }
 .cal-event.multiday { background:rgba(122,184,240,0.85); color:#fff; font-weight:700; }
@@ -236,7 +238,9 @@ html,body { width:100%; height:100%; overflow:hidden; font-family:var(--font-san
   background: rgba(0,0,0,0.62);
   border: 1px solid rgba(255,255,255,0.14);
   border-radius:9px; border-left:2px solid var(--accent);
+  cursor: pointer; transition: background 0.15s;
 }
+.upcoming-item:hover { background: rgba(20,30,55,0.85); }
 .upcoming-date { font-family:var(--font-serif); font-size:13px; color:var(--accent); white-space:nowrap; min-width:95px; font-weight:400; text-shadow:var(--shadow-text); }
 .upcoming-title { font-size:12px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500; text-shadow:var(--shadow-text); }
 
@@ -902,15 +906,15 @@ function setupSpeciesAutoScroll() {
 
 const DEFAULT_BG   = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2400';
 const DEFAULT_ICAL = 'https://calendar.google.com/calendar/ical/aaronspero1%40gmail.com/private-fcf40194d406df57c8aaba1dbef1c70c/basic.ics';
-// Multiple CORS proxies tried in sequence — if one is down, next is used
+
+// ─── CORS PROXIES — allorigins first (most reliable for iCal), then fallbacks ───
 const CORS_PROXIES = [
-  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-  u => `https://yaakov.online/cors-proxy/?url=${encodeURIComponent(u)}`,
-  u => `https://cors-anywhere.herokuapp.com/${u}`,
+  u => `https://thingproxy.freeboard.io/fetch/${u}`,
 ];
+
 const PRIMARY_SPECIES = ['Northern Snakehead', 'Largemouth Bass'];
 
 const DEFAULTS = {
@@ -1364,7 +1368,7 @@ async function fetchIcalWithFallback(url){
       // Try next proxy
     }
   }
-  // Last resort: try direct fetch (works if server allows CORS or if opened locally)
+  // Last resort: direct fetch
   try {
     if(calStatus) calStatus.textContent = '⏳ Trying direct…';
     const r = await fetchWithTimeout(url, 9000);
@@ -1385,7 +1389,7 @@ async function loadCalendar(){
     st.textContent=`✅ ${allEvents.length} events · ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
     st.style.color='var(--good)';
   }else{
-    st.textContent='⚠️ All proxies failed — check iCal URL in Settings'; st.style.color='var(--bad)';
+    st.textContent='⚠️ Calendar sync failed — check iCal URL in Settings'; st.style.color='var(--bad)';
     renderCal();renderUpcoming();
   }
 }
@@ -1395,6 +1399,17 @@ function changeViewMonth(dir){
   if(viewMonth>11){viewMonth=0;viewYear++;}
   if(viewMonth<0){viewMonth=11;viewYear--;}
   renderCal();
+}
+
+// ─── Open Google Calendar new-event page for a given date ───
+function openNewEvent(year, month, day) {
+  // month is 0-indexed here
+  const yy = String(year);
+  const mm = String(month + 1).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  const dateStr = `${yy}${mm}${dd}`;
+  const url = `https://calendar.google.com/calendar/r/eventedit?dates=${dateStr}/${dateStr}`;
+  window.open(url, '_blank');
 }
 
 function renderCal(){
@@ -1407,17 +1422,28 @@ function renderCal(){
   const dIM=new Date(viewYear,viewMonth+1,0).getDate();
   const dPM=new Date(viewYear,viewMonth,0).getDate();
   let html=DAY_NAMES.map(d=>`<div class="cal-dow">${d}</div>`).join('');
-  for(let i=0;i<firstDay;i++)html+=`<div class="cal-day other-month"><div class="cal-day-num">${dPM-firstDay+1+i}</div></div>`;
+
+  // Leading days from previous month (not clickable)
+  for(let i=0;i<firstDay;i++){
+    html+=`<div class="cal-day other-month"><div class="cal-day-num">${dPM-firstDay+1+i}</div></div>`;
+  }
+
+  // Current month days — clicking opens Google Calendar new event
   for(let day=1;day<=dIM;day++){
     const isToday=day===now.getDate()&&viewMonth===now.getMonth()&&viewYear===now.getFullYear();
     const ds=`${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const evs=evByDate[ds]||[];
     let evH=evs.slice(0,3).map(ev=>`<div class="cal-event${ev.isMultiday?' multiday':''}" title="${ev.summary}">${ev.summary}</div>`).join('');
     if(evs.length>3)evH+=`<div class="cal-more">+${evs.length-3} more</div>`;
-    html+=`<div class="cal-day${isToday?' today':''}"><div class="cal-day-num">${day}</div><div class="cal-events">${evH}</div></div>`;
+    html+=`<div class="cal-day${isToday?' today':''}" onclick="openNewEvent(${viewYear},${viewMonth},${day})" title="Add event on ${MNS[viewMonth]} ${day}"><div class="cal-day-num">${day}</div><div class="cal-events">${evH}</div></div>`;
   }
+
+  // Trailing days from next month (not clickable)
   const rem=(firstDay+dIM)%7===0?0:7-(firstDay+dIM)%7;
-  for(let i=1;i<=rem;i++)html+=`<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+  for(let i=1;i<=rem;i++){
+    html+=`<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+  }
+
   document.getElementById('cal-grid').innerHTML=html;
 }
 
@@ -1432,13 +1458,21 @@ function renderUpcoming(){
   const MOS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   listEl.innerHTML=up.map(ev=>{
     const ds=ev.dtstart?.date||(ev.dtstart?.dateTime||'').slice(0,10);let label='';
-    if(ds){const d=new Date(ds+'T12:00:00');label=`${MOS[d.getMonth()]} ${d.getDate()}`;}
+    let gcDay=null, gcMonth=null, gcYear=null;
+    if(ds){
+      const d=new Date(ds+'T12:00:00');
+      gcYear=d.getFullYear(); gcMonth=d.getMonth(); gcDay=d.getDate();
+      label=`${MOS[gcMonth]} ${gcDay}`;
+    }
     if(ev.dtstart?.dateTime&&!ev.dtstart?.allDay){
       const t=new Date(ev.dtstart.dateTime);let h=t.getHours(),m=t.getMinutes();
       const ap=h>=12?'PM':'AM';h=h%12||12;
       label+=` · ${h}:${String(m).padStart(2,'0')} ${ap}`;
     }
-    return `<div class="upcoming-item"><div class="upcoming-date">${label}</div><div class="upcoming-title">${ev.summary||'(No title)'}</div></div>`;
+    const clickHandler = gcDay !== null
+      ? `onclick="openNewEvent(${gcYear},${gcMonth},${gcDay})"`
+      : '';
+    return `<div class="upcoming-item" ${clickHandler} title="Add event on this day"><div class="upcoming-date">${label}</div><div class="upcoming-title">${ev.summary||'(No title)'}</div></div>`;
   }).join('');
 }
 
