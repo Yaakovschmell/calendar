@@ -902,10 +902,14 @@ function setupSpeciesAutoScroll() {
 
 const DEFAULT_BG   = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2400';
 const DEFAULT_ICAL = 'https://calendar.google.com/calendar/ical/aaronspero1%40gmail.com/private-fcf40194d406df57c8aaba1dbef1c70c/basic.ics';
+// Multiple CORS proxies tried in sequence — if one is down, next is used
 const CORS_PROXIES = [
-  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  u => `https://thingproxy.freeboard.io/fetch/${u}`,
+  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+  u => `https://yaakov.online/cors-proxy/?url=${encodeURIComponent(u)}`,
+  u => `https://cors-anywhere.herokuapp.com/${u}`,
 ];
 const PRIMARY_SPECIES = ['Northern Snakehead', 'Largemouth Bass'];
 
@@ -1333,15 +1337,42 @@ function getEventDays(ev){
   return days;
 }
 
-async function fetchIcalWithFallback(url){
-  for(const px of CORS_PROXIES){
-    try{
-      const r=await fetch(px(url),{cache:'no-cache'});
-      if(!r.ok)continue;
-      const t=await r.text();
-      if(t.includes('BEGIN:VCALENDAR')||t.includes('BEGIN:VEVENT'))return t;
-    }catch(e){}
+async function fetchWithTimeout(url, ms=8000){
+  const ctrl = new AbortController();
+  const tid = setTimeout(()=>ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, { cache:'no-cache', signal: ctrl.signal });
+    clearTimeout(tid);
+    return r;
+  } catch(e) {
+    clearTimeout(tid);
+    throw e;
   }
+}
+
+async function fetchIcalWithFallback(url){
+  const calStatus = document.getElementById('cal-status');
+  for(let i=0; i<CORS_PROXIES.length; i++){
+    const proxyUrl = CORS_PROXIES[i](url);
+    try{
+      if(calStatus) calStatus.textContent = `⏳ Trying proxy ${i+1}/${CORS_PROXIES.length}…`;
+      const r = await fetchWithTimeout(proxyUrl, 9000);
+      if(!r.ok) continue;
+      const t = await r.text();
+      if(t.includes('BEGIN:VCALENDAR') || t.includes('BEGIN:VEVENT')) return t;
+    } catch(e) {
+      // Try next proxy
+    }
+  }
+  // Last resort: try direct fetch (works if server allows CORS or if opened locally)
+  try {
+    if(calStatus) calStatus.textContent = '⏳ Trying direct…';
+    const r = await fetchWithTimeout(url, 9000);
+    if(r.ok){
+      const t = await r.text();
+      if(t.includes('BEGIN:VCALENDAR') || t.includes('BEGIN:VEVENT')) return t;
+    }
+  } catch(e) {}
   return null;
 }
 
@@ -1354,7 +1385,7 @@ async function loadCalendar(){
     st.textContent=`✅ ${allEvents.length} events · ${new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
     st.style.color='var(--good)';
   }else{
-    st.textContent='⚠️ Calendar sync failed'; st.style.color='var(--bad)';
+    st.textContent='⚠️ All proxies failed — check iCal URL in Settings'; st.style.color='var(--bad)';
     renderCal();renderUpcoming();
   }
 }
