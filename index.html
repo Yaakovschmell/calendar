@@ -925,7 +925,26 @@ const DEFAULTS = {
   icalUrl:DEFAULT_ICAL, bg:DEFAULT_BG,
   accentColor:'#e8c97a', timeFmt:'12', tempUnit:'F',
 };
-function getCFG(){ try{return Object.assign({},DEFAULTS,JSON.parse(localStorage.getItem('fishDash14')||'{}'));}catch(e){return Object.assign({},DEFAULTS);} }
+// PINNED defaults — these always win over old localStorage values so every device
+// loads the right calendar, location, and tide station without needing Settings first.
+const PINNED = {
+  icalUrl:    DEFAULT_ICAL,
+  city:       DEFAULTS.city,
+  lat:        DEFAULTS.lat,
+  lon:        DEFAULTS.lon,
+  fishName:   DEFAULTS.fishName,
+  fishLat:    DEFAULTS.fishLat,
+  fishLon:    DEFAULTS.fishLon,
+  tideStation:DEFAULTS.tideStation,
+  fishSpecies:DEFAULTS.fishSpecies,
+};
+function getCFG(){
+  try {
+    const saved = JSON.parse(localStorage.getItem('fishDash14') || '{}');
+    // Merge order: DEFAULTS → saved localStorage → PINNED (pinned always wins)
+    return Object.assign({}, DEFAULTS, saved, PINNED);
+  } catch(e) { return Object.assign({}, DEFAULTS); }
+}
 let CFG = getCFG();
 
 function autoSpecies(lat, lon, name) {
